@@ -156,6 +156,7 @@ set_target_properties(obs-browser PROPERTIES FOLDER "plugins/obs-browser")
 
 set(obs-browser-page_SOURCES
 	obs-browser-page/obs-browser-page-main.cpp
+	obs-browser-page/obs-browser-page.rc
 	browser-app.cpp
 	deps/json11/json11.cpp
 	)
@@ -165,6 +166,15 @@ set(obs-browser-page_HEADERS
 	deps/json11/json11.hpp
 	cef-headers.hpp
 	)
+
+if(WIN32)
+	# TODO: Either read these from browser-version.h or write it to browser-version.h instead and generate it here
+	set(OBS_BROWSER_VERSION_MAJOR 1)
+	set(OBS_BROWSER_VERSION_MINOR 2)
+	set(OBS_BROWSER_VERSION_PATCH 3)
+	set(OBS_BROWSER_VERSION_STRING "1.2.3")
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/obs-browser-page/obs-browser-page.rc.in ${CMAKE_CURRENT_SOURCE_DIR}/obs-browser-page/obs-browser-page.rc)
+endif()
 
 add_executable(obs-browser-page
 	${obs-browser-page_SOURCES}

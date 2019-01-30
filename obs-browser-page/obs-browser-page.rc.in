@@ -1,0 +1,26 @@
+IDI_ICON1 ICON DISCARDABLE "../cmake/winrc/obs-studio.ico"
+
+1 VERSIONINFO
+FILEVERSION ${OBS_BROWSER_VERSION_MAJOR},${OBS_BROWSER_VERSION_MINOR},${OBS_BROWSER_VERSION_PATCH},0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "OBS"
+      VALUE "FileDescription", "OBS Browser Page"
+      VALUE "FileVersion", "${OBS_BROWSER_VERSION_STRING}"
+      VALUE "InternalName", "obs-browser-page"
+      VALUE "OriginalFilename", "obs-browser-page"
+      VALUE "ProductName", "OBS Studio"
+      VALUE "ProductVersion", "${OBS_BROWSER_VERSION_STRING}"
+      VALUE "Comments", "Powered by CEF."
+      VALUE "LegalCopyright", "(C) Hugh Bailey"
+    END
+  END
+
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 0x04B0
+  END
+END
