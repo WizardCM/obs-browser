@@ -100,6 +100,8 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 	obsStudioObj->SetValue("pluginVersion",
 			pluginVersion, V8_PROPERTY_ATTRIBUTE_NONE);
 
+	// TODO: Also return whether we're currently a source or a panel
+
 	CefRefPtr<CefV8Value> func =
 		CefV8Value::CreateFunction("getCurrentScene", this);
 	obsStudioObj->SetValue("getCurrentScene",
@@ -109,6 +111,55 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 		CefV8Value::CreateFunction("getStatus", this);
 	obsStudioObj->SetValue("getStatus",
 			getStatus, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	// TODO: Check HERE if user has enabled the ability to control OBS
+	// TODO: Do not allow any of this if we're in a browser panel
+
+	CefRefPtr<CefV8Value> startStreaming =
+			 CefV8Value::CreateFunction("startStreaming", this);
+	obsStudioObj->SetValue("startStreaming",
+			startStreaming, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> stopStreaming =
+		CefV8Value::CreateFunction("stopStreaming", this);
+	obsStudioObj->SetValue("stopStreaming",
+			stopStreaming, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> startRecording =
+		CefV8Value::CreateFunction("startRecording", this);
+	obsStudioObj->SetValue("startRecording",
+			startRecording, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> stopRecording =
+		CefV8Value::CreateFunction("stopRecording", this);
+	obsStudioObj->SetValue("stopRecording",
+			stopRecording, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> startReplaybuffer =
+		CefV8Value::CreateFunction("startReplaybuffer", this);
+	obsStudioObj->SetValue("startReplaybuffer",
+			startReplaybuffer, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> stopReplaybuffer =
+		CefV8Value::CreateFunction("stopReplaybuffer", this);
+	obsStudioObj->SetValue("stopReplaybuffer",
+			stopReplaybuffer, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> getScenes =
+		CefV8Value::CreateFunction("getScenes", this);
+	obsStudioObj->SetValue("getScenes",
+			getScenes, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> getTransitions =
+		CefV8Value::CreateFunction("getTransitions", this);
+	obsStudioObj->SetValue("getTransitions",
+			getTransitions, V8_PROPERTY_ATTRIBUTE_NONE);
+
+	CefRefPtr<CefV8Value> setCurrentScene =
+		CefV8Value::CreateFunction("setCurrentScene", this);
+	obsStudioObj->SetValue("setCurrentScene",
+			setCurrentScene, V8_PROPERTY_ATTRIBUTE_NONE);
+
 }
 
 void BrowserApp::ExecuteJSFunction(CefRefPtr<CefBrowser> browser,
@@ -232,7 +283,7 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefV8Value>,
 		const CefV8ValueList &arguments,
-		CefRefPtr<CefV8Value> &,
+		CefRefPtr<CefV8Value> &retVal,
 		CefString &)
 {
 	if (name == "getCurrentScene") {
@@ -250,7 +301,8 @@ bool BrowserApp::Execute(const CefString &name,
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
 
-	} else if (name == "getStatus") {
+	}
+	else if (name == "getStatus") {
 		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
 			callbackId++;
 			callbackMap[callbackId] = arguments[0];
@@ -265,6 +317,45 @@ bool BrowserApp::Execute(const CefString &name,
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
 
+	} else if (name == "startStreaming" || name == "stopStreaming" || name == "startRecording" || name == "stopRecording" || name == "startReplaybuffer" || name == "stopReplaybuffer") {
+		// TODO Find out from Jim if we can skip SendProcessMessage and just run OBS functions directly in here (if yes, just copy all the if else statements)
+		CefRefPtr<CefProcessMessage> msg =
+			CefProcessMessage::Create(name);
+
+		CefRefPtr<CefBrowser> browser =
+			CefV8Context::GetCurrentContext()->GetBrowser();
+		browser->SendProcessMessage(PID_BROWSER, msg);
+	} else if (name == "getScenes" || name == "getTransitions") {
+		// TODO This is duplicate code of getStatus
+		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
+			callbackId++;
+			callbackMap[callbackId] = arguments[0];
+		}
+
+		CefRefPtr<CefProcessMessage> msg =
+			CefProcessMessage::Create(name);
+		CefRefPtr<CefListValue> args = msg->GetArgumentList();
+		args->SetInt(0, callbackId);
+
+		CefRefPtr<CefBrowser> browser =
+			CefV8Context::GetCurrentContext()->GetBrowser();
+		browser->SendProcessMessage(PID_BROWSER, msg);
+
+	} else if (name == "setCurrentScene") {
+		if (!(arguments.size() > 0 && arguments[0]->IsString()))
+			return false;
+			
+		CefRefPtr<CefProcessMessage> msg =
+			CefProcessMessage::Create("setCurrentScene");
+		CefRefPtr<CefListValue> args = msg->GetArgumentList();
+		args->SetString(0, arguments[0]->GetStringValue());
+
+		CefRefPtr<CefBrowser> browser =
+			CefV8Context::GetCurrentContext()->GetBrowser();
+		browser->SendProcessMessage(PID_BROWSER, msg);
+		/* TODO: Figure out how to send a return value (which doesn't crash32)
+		CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
+		retVal->SetValue(0, val, V8_PROPERTY_ATTRIBUTE_READONLY); */
 	} else {
 		/* Function does not exist. */
 		return false;
