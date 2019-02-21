@@ -22,6 +22,7 @@
 #include "json11/json11.hpp"
 #include <obs-frontend-api.h>
 #include <obs.hpp>
+#include <util/util.hpp>
 
 using namespace json11;
 
@@ -123,7 +124,63 @@ bool BrowserClient::OnProcessMessageReceived(
 			{"streaming", obs_frontend_streaming_active()},
 			{"replaybuffer", obs_frontend_replay_buffer_active()}
 		};
+		
+	} else if (name == "startStreaming") {
+		// TODO: Maybe log that this function was triggered by the webpage
+		obs_frontend_streaming_start();
+		return true;
+	} else if (name == "stopStreaming") {
+		obs_frontend_streaming_stop();
+		return true;
+	} else if (name == "startRecording") {
+		obs_frontend_recording_start();
+		return true;
+	} else if (name == "stopRecording") {
+		obs_frontend_recording_stop();
+		return true;
+	} else if (name == "startReplaybuffer") {
+		obs_frontend_replay_buffer_start();
+		return true;
+	} else if (name == "stopReplaybuffer") {
+		obs_frontend_replay_buffer_stop();
+		return true;
+	} else if (name == "getScenes") {
+		BPtr<char*> scenes = obs_frontend_get_scene_names();
+		char **temp = scenes;
+		std::vector<std::string> scene_vector;
+		while(*temp) {
+			scene_vector.push_back(*temp);
+			temp++;
+		}
+		
+		json = Json::object {
+			{"scenes", scene_vector}
+		};
+	} else if (name == "getTransitions") {
+		struct obs_frontend_source_list transitions = {};
 
+		std::vector<obs_source_t*> vtransitions;
+		std::vector<std::string> transitionNames;
+
+		obs_frontend_get_transitions(&transitions);
+		vtransitions.assign(&transitions.sources.array[0],
+				&transitions.sources.array[transitions.sources.num]);
+		transitionNames.reserve(vtransitions.size());
+
+		for (size_t i = 0; i < vtransitions.size(); i++)
+			transitionNames.push_back(obs_source_get_name(vtransitions[i]));
+
+		json = Json::object {
+			{"transitions", transitionNames}
+		};
+		obs_frontend_source_list_free(&transitions);
+	} else if (name == "setCurrentScene") {
+		std::string scene = message->GetArgumentList()->GetString(0);
+		obs_source_t *source = obs_get_source_by_name(scene.c_str());
+		obs_frontend_set_current_scene(source);
+		obs_source_release(source);
+
+		return true;
 	} else {
 		return false;
 	}
