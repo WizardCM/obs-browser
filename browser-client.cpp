@@ -101,6 +101,50 @@ bool BrowserClient::OnProcessMessageReceived(
 		return false;
 	}
 
+	/* if (name == "getAvailableCommands") {
+
+	} */
+
+	if (bs->control) {
+		if (name == "setCurrentScene" || name == "setCurrentTransition") {
+			std::string sourceName = message->GetArgumentList()->GetString(0);
+			obs_source_t *source = obs_get_source_by_name(sourceName.c_str());
+			if (name == "setCurrentScene")
+				obs_frontend_set_current_scene(source);
+			else
+				obs_frontend_set_current_transition(source);
+
+			obs_source_release(source);
+			return true;
+		} else if (name == "saveReplayBuffer") {
+			obs_frontend_replay_buffer_save();
+		} else if (name == "setCurrentProfile") {
+			std::string profile = message->GetArgumentList()->GetString(0);
+			obs_frontend_set_current_profile(profile.c_str());
+
+			return true;
+		} else if (name == "startStreaming") {
+			// TODO: Maybe log that this function was triggered by the webpage
+			obs_frontend_streaming_start();
+			return true;
+		} else if (name == "stopStreaming") {
+			obs_frontend_streaming_stop();
+			return true;
+		} else if (name == "startRecording") {
+			obs_frontend_recording_start();
+			return true;
+		} else if (name == "stopRecording") {
+			obs_frontend_recording_stop();
+			return true;
+		} else if (name == "startReplayBuffer") {
+			obs_frontend_replay_buffer_start();
+			return true;
+		} else if (name == "stopReplayBuffer") {
+			obs_frontend_replay_buffer_stop();
+			return true;
+		}
+	}
+
 	if (name == "getCurrentScene") {
 		OBSSource current_scene = obs_frontend_get_current_scene();
 		obs_source_release(current_scene);
@@ -125,25 +169,6 @@ bool BrowserClient::OnProcessMessageReceived(
 			{"replaybuffer", obs_frontend_replay_buffer_active()}
 		};
 		
-	} else if (name == "startStreaming") {
-		// TODO: Maybe log that this function was triggered by the webpage
-		obs_frontend_streaming_start();
-		return true;
-	} else if (name == "stopStreaming") {
-		obs_frontend_streaming_stop();
-		return true;
-	} else if (name == "startRecording") {
-		obs_frontend_recording_start();
-		return true;
-	} else if (name == "stopRecording") {
-		obs_frontend_recording_stop();
-		return true;
-	} else if (name == "startReplaybuffer") {
-		obs_frontend_replay_buffer_start();
-		return true;
-	} else if (name == "stopReplaybuffer") {
-		obs_frontend_replay_buffer_stop();
-		return true;
 	} else if (name == "getCurrentScene" || name == "getCurrentTransition") {
 		obs_source_t *source = nullptr;
 		std::string key;

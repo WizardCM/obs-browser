@@ -49,6 +49,7 @@ struct BrowserSource {
 	bool                  fps_custom               = false;
 	int                   fps                      = 0;
 	bool                  restart                  = false;
+	bool                  control                  = false;
 	bool                  shutdown_on_invisible    = false;
 	bool                  is_local                 = false;
 #if EXPERIMENTAL_SHARED_TEXTURE_SUPPORT_ENABLED

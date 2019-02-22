@@ -106,19 +106,21 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 		"getCurrentTransition",
 		"getCurrentProfile",
 		"getStatus",
-		"startStreaming",
-		"stopStreaming",
-		"startRecording",
-		"stopRecording",
-		"startReplayBuffer",
-		"stopReplayBuffer",
 		"getTransitions",
 		"getScenes",
 		"getProfiles",
 		"setCurrentTransition",
 		"setCurrentScene",
-		"setCurrentProfile"
+		"setCurrentProfile",
+		"saveReplayBuffer",
+		"startStreaming",
+		"stopStreaming",
+		"startRecording",
+		"stopRecording",
+		"startReplayBuffer",
+		"stopReplayBuffer"
 	};
+	// TODO: Also return whether we're currently a source or a panel
 
 	for (size_t i = 0; i < functions.size(); i++) {
 		CefRefPtr<CefV8Value> func =
@@ -126,8 +128,17 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 		obsStudioObj->SetValue(functions[i],
 			func, V8_PROPERTY_ATTRIBUTE_NONE);
 	}
+
+	// TODO: Check HERE if user has enabled the ability to control OBS
+	// TODO: Do not allow any of this if we're in a browser panel
+
+	/* std::vector<std::string> unsafeFunctions = {
+	};
+
+	for (size_t i = 0; i < unsafeFunctions.size(); i++) {
+		
+	} */
 	/*
-	// TODO: Also return whether we're currently a source or a panel
 
 	CefRefPtr<CefV8Value> func =
 		CefV8Value::CreateFunction("getCurrentScene", this);
@@ -139,58 +150,6 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 	obsStudioObj->SetValue("getStatus",
 			getStatus, V8_PROPERTY_ATTRIBUTE_NONE);
 
-	// TODO: Check HERE if user has enabled the ability to control OBS
-	// TODO: Do not allow any of this if we're in a browser panel
-
-	CefRefPtr<CefV8Value> startStreaming =
-			 CefV8Value::CreateFunction("startStreaming", this);
-	obsStudioObj->SetValue("startStreaming",
-			startStreaming, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> stopStreaming =
-		CefV8Value::CreateFunction("stopStreaming", this);
-	obsStudioObj->SetValue("stopStreaming",
-			stopStreaming, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> startRecording =
-		CefV8Value::CreateFunction("startRecording", this);
-	obsStudioObj->SetValue("startRecording",
-			startRecording, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> stopRecording =
-		CefV8Value::CreateFunction("stopRecording", this);
-	obsStudioObj->SetValue("stopRecording",
-			stopRecording, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> startReplaybuffer =
-		CefV8Value::CreateFunction("startReplaybuffer", this);
-	obsStudioObj->SetValue("startReplaybuffer",
-			startReplaybuffer, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> stopReplaybuffer =
-		CefV8Value::CreateFunction("stopReplaybuffer", this);
-	obsStudioObj->SetValue("stopReplaybuffer",
-			stopReplaybuffer, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> getScenes =
-		CefV8Value::CreateFunction("getScenes", this);
-	obsStudioObj->SetValue("getScenes",
-			getScenes, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> getTransitions =
-		CefV8Value::CreateFunction("getTransitions", this);
-	obsStudioObj->SetValue("getTransitions",
-			getTransitions, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> getProfiles =
-		CefV8Value::CreateFunction("getProfiles", this);
-	obsStudioObj->SetValue("getProfiles",
-			getTransitions, V8_PROPERTY_ATTRIBUTE_NONE);
-
-	CefRefPtr<CefV8Value> setCurrentScene =
-		CefV8Value::CreateFunction("setCurrentScene", this);
-	obsStudioObj->SetValue("setCurrentScene",
-			setCurrentScene, V8_PROPERTY_ATTRIBUTE_NONE);
 	*/
 }
 
@@ -319,7 +278,7 @@ bool BrowserApp::Execute(const CefString &name,
 		CefString &)
 {
 	if (name == "getCurrentScene" || name == "getStatus" || name == "getCurrentProfile" || name == "getCurrentTransition" ||
-		name == "getScenes" || name == "getTransitions" || name == "getProfiles" || name == "getOBSVersion") {
+		name == "getScenes" || name == "getTransitions" || name == "getProfiles" || name == "getOBSVersion" || name == "saveReplayBuffer") { // LEVEL 0/1 DANGER
 		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
 			callbackId++;
 			callbackMap[callbackId] = arguments[0];
@@ -333,8 +292,9 @@ bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefBrowser> browser =
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
+		retVal = CefV8Value::CreateString("Command sent. The first parameter needs to be a callback to recieve a response.");
 	} else if (name == "startStreaming" || name == "stopStreaming" || name == "startRecording" || name == "stopRecording" ||
-		name == "startReplaybuffer" || name == "stopReplaybuffer") {
+		name == "startReplayBuffer" || name == "stopReplayBuffer") { // LEVEL 3 DANGER
 		// TODO Find out from Jim if we can skip SendProcessMessage and just run OBS functions directly in here (if yes, just copy all the if else statements)
 		CefRefPtr<CefProcessMessage> msg =
 			CefProcessMessage::Create(name);
@@ -342,7 +302,8 @@ bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefBrowser> browser =
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
-	} else if (name == "setCurrentScene" || name == "setCurrentProfile" || name == "setCurrentTransition") {
+		retVal = CefV8Value::CreateString("Command sent. A response will not be recieved, make sure you have an event listener configured.");
+	} else if (name == "setCurrentScene" || name == "setCurrentProfile" || name == "setCurrentTransition") { // LEVEL 2 DANGER
 		if (!(arguments.size() > 0 && arguments[0]->IsString()))
 			return false;
 			
@@ -354,9 +315,7 @@ bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefBrowser> browser =
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
-		/* TODO: Figure out how to send a return value (which doesn't crash32)
-		CefRefPtr<CefV8Value> val = CefV8Value::CreateBool(true);
-		retVal->SetValue(0, val, V8_PROPERTY_ATTRIBUTE_READONLY); */
+		retVal = CefV8Value::CreateBool(true);
 	} else {
 		/* Function does not exist. */
 		return false;
