@@ -93,6 +93,32 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 	obsStudioObj->SetValue("pluginVersion",
 			pluginVersion, V8_PROPERTY_ATTRIBUTE_NONE);
 
+	std::vector<std::string> functions = {
+		"getCurrentScene",
+		"getCurrentTransition",
+		"getCurrentProfile",
+		"getStatus",
+		"startStreaming",
+		"stopStreaming",
+		"startRecording",
+		"stopRecording",
+		"startReplayBuffer",
+		"stopReplayBuffer",
+		"getTransitions",
+		"getScenes",
+		"getProfiles",
+		"setCurrentTransition",
+		"setCurrentScene",
+		"setCurrentProfile"
+	};
+
+	for (size_t i = 0; i < functions.size(); i++) {
+		CefRefPtr<CefV8Value> func =
+			CefV8Value::CreateFunction(functions[i], this);
+		obsStudioObj->SetValue(functions[i],
+			func, V8_PROPERTY_ATTRIBUTE_NONE);
+	}
+	/*
 	// TODO: Also return whether we're currently a source or a panel
 
 	CefRefPtr<CefV8Value> func =
@@ -148,11 +174,16 @@ void BrowserApp::OnContextCreated(CefRefPtr<CefBrowser>,
 	obsStudioObj->SetValue("getTransitions",
 			getTransitions, V8_PROPERTY_ATTRIBUTE_NONE);
 
+	CefRefPtr<CefV8Value> getProfiles =
+		CefV8Value::CreateFunction("getProfiles", this);
+	obsStudioObj->SetValue("getProfiles",
+			getTransitions, V8_PROPERTY_ATTRIBUTE_NONE);
+
 	CefRefPtr<CefV8Value> setCurrentScene =
 		CefV8Value::CreateFunction("setCurrentScene", this);
 	obsStudioObj->SetValue("setCurrentScene",
 			setCurrentScene, V8_PROPERTY_ATTRIBUTE_NONE);
-
+	*/
 }
 
 void BrowserApp::ExecuteJSFunction(CefRefPtr<CefBrowser> browser,
@@ -259,7 +290,7 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 		args.push_back(retval);
 
-		if(callback)
+		if (callback)
 			callback->ExecuteFunction(NULL, args);
 
 		context->Exit();
@@ -279,37 +310,21 @@ bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefV8Value> &retVal,
 		CefString &)
 {
-	if (name == "getCurrentScene") {
+	if (name == "getCurrentScene" || name == "getStatus" || name == "getCurrentProfile" || name == "getCurrentTransition" ||
+		name == "getScenes" || name == "getTransitions" || name == "getProfiles") {
 		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
 			callbackId++;
 			callbackMap[callbackId] = arguments[0];
 		}
 
 		CefRefPtr<CefProcessMessage> msg =
-			CefProcessMessage::Create("getCurrentScene");
+			CefProcessMessage::Create(name);
 		CefRefPtr<CefListValue> args = msg->GetArgumentList();
 		args->SetInt(0, callbackId);
 
 		CefRefPtr<CefBrowser> browser =
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
-
-	}
-	else if (name == "getStatus") {
-		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
-			callbackId++;
-			callbackMap[callbackId] = arguments[0];
-		}
-
-		CefRefPtr<CefProcessMessage> msg =
-			CefProcessMessage::Create("getStatus");
-		CefRefPtr<CefListValue> args = msg->GetArgumentList();
-		args->SetInt(0, callbackId);
-
-		CefRefPtr<CefBrowser> browser =
-			CefV8Context::GetCurrentContext()->GetBrowser();
-		browser->SendProcessMessage(PID_BROWSER, msg);
-
 	} else if (name == "startStreaming" || name == "stopStreaming" || name == "startRecording" || name == "stopRecording" || name == "startReplaybuffer" || name == "stopReplaybuffer") {
 		// TODO Find out from Jim if we can skip SendProcessMessage and just run OBS functions directly in here (if yes, just copy all the if else statements)
 		CefRefPtr<CefProcessMessage> msg =
@@ -318,23 +333,7 @@ bool BrowserApp::Execute(const CefString &name,
 		CefRefPtr<CefBrowser> browser =
 			CefV8Context::GetCurrentContext()->GetBrowser();
 		browser->SendProcessMessage(PID_BROWSER, msg);
-	} else if (name == "getScenes" || name == "getTransitions") {
-		// TODO This is duplicate code of getStatus
-		if (arguments.size() == 1 && arguments[0]->IsFunction()) {
-			callbackId++;
-			callbackMap[callbackId] = arguments[0];
-		}
-
-		CefRefPtr<CefProcessMessage> msg =
-			CefProcessMessage::Create(name);
-		CefRefPtr<CefListValue> args = msg->GetArgumentList();
-		args->SetInt(0, callbackId);
-
-		CefRefPtr<CefBrowser> browser =
-			CefV8Context::GetCurrentContext()->GetBrowser();
-		browser->SendProcessMessage(PID_BROWSER, msg);
-
-	} else if (name == "setCurrentScene") {
+	} else if (name == "setCurrentScene" || name == "setCurrentProfile" || name == "setCurrentTransition") {
 		if (!(arguments.size() > 0 && arguments[0]->IsString()))
 			return false;
 			
