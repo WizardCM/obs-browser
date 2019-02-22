@@ -144,41 +144,106 @@ bool BrowserClient::OnProcessMessageReceived(
 	} else if (name == "stopReplaybuffer") {
 		obs_frontend_replay_buffer_stop();
 		return true;
-	} else if (name == "getScenes") {
-		BPtr<char*> scenes = obs_frontend_get_scene_names();
-		char **temp = scenes;
-		std::vector<std::string> scene_vector;
-		while(*temp) {
-			scene_vector.push_back(*temp);
+	} else if (name == "getCurrentScene" || name == "getCurrentTransition") {
+		obs_source_t *source = nullptr;
+		std::string key;
+		std::string name = "";
+		if (name == "getCurrentScene") {
+			source = obs_frontend_get_current_scene();
+			key = "scene";
+		} else {
+			source = obs_frontend_get_current_transition();
+			key = "transition";
+		}
+		name = obs_source_get_name(source);
+
+		json = Json::object {
+			{key, name}
+		};
+
+		obs_source_release(source);
+	} else if (name == "getCurrentProfile") {
+		char *profile = obs_frontend_get_current_profile();
+		std::string name = profile;
+
+		json = Json::object {
+			{"profile", name}
+		};
+
+		bfree(profile);
+	} else if (name == "getOBSVersion") {
+		std::string version = obs_get_version_string();
+		uint32_t num = obs_get_version();
+		uint8_t major = (num >> 24) & 0xFF;
+		uint8_t minor = (num >> 16) & 0xFF;
+		uint8_t patch = (num) & 0xFF;
+		json = Json::object {
+			{"version", version},
+			{"major", major},
+			{"minor", minor},
+			{"patch", patch}
+		};
+	} else if (name == "getProfiles" || name == "getSceneCollections") {
+		BPtr<char*> list;
+		std::string key;
+
+		if (name == "getProfiles") {
+			list = obs_frontend_get_profiles();
+			key = "profiles";
+		} else {
+			list = obs_frontend_get_scene_collections();
+			key = "scene_collections";
+		}
+
+		char **temp = list;
+		std::vector<std::string> strVector;
+		while (*temp) {
+			strVector.push_back(*temp);
 			temp++;
 		}
-		
-		json = Json::object {
-			{"scenes", scene_vector}
+
+		json = Json::object{
+			{key, strVector}
 		};
-	} else if (name == "getTransitions") {
-		struct obs_frontend_source_list transitions = {};
+	} else if (name == "getScenes" || name == "getTransitions") {
+		struct obs_frontend_source_list sourceList = {};
 
-		std::vector<obs_source_t*> vtransitions;
-		std::vector<std::string> transitionNames;
+		std::vector<obs_source_t*> vSourceList;
+		std::vector<std::string> sourceNames;
+		std::string key;
+		if (name == "getTransitions") {
+			obs_frontend_get_transitions(&sourceList);
+			key = "transitions";
+		} else if (name == "getScenes") {
+			obs_frontend_get_scenes(&sourceList);
+			key = "scenes";
+		}
 
-		obs_frontend_get_transitions(&transitions);
-		vtransitions.assign(&transitions.sources.array[0],
-				&transitions.sources.array[transitions.sources.num]);
-		transitionNames.reserve(vtransitions.size());
+		vSourceList.assign(&sourceList.sources.array[0],
+			&sourceList.sources.array[sourceList.sources.num]);
+		sourceNames.reserve(vSourceList.size());
 
-		for (size_t i = 0; i < vtransitions.size(); i++)
-			transitionNames.push_back(obs_source_get_name(vtransitions[i]));
+		for (size_t i = 0; i < vSourceList.size(); i++)
+			sourceNames.push_back(obs_source_get_name(vSourceList[i]));
 
-		json = Json::object {
-			{"transitions", transitionNames}
+		json = Json::object{
+			{key, sourceNames}
 		};
-		obs_frontend_source_list_free(&transitions);
-	} else if (name == "setCurrentScene") {
-		std::string scene = message->GetArgumentList()->GetString(0);
-		obs_source_t *source = obs_get_source_by_name(scene.c_str());
-		obs_frontend_set_current_scene(source);
+
+		obs_frontend_source_list_free(&sourceList);
+	} else if (name == "setCurrentScene" || name == "setCurrentTransition") {
+		std::string sourceName = message->GetArgumentList()->GetString(0);
+		obs_source_t *source = obs_get_source_by_name(sourceName.c_str());
+		if (name == "setCurrentScene")
+			obs_frontend_set_current_scene(source);
+		else
+			obs_frontend_set_current_transition(source);
+
 		obs_source_release(source);
+		return true;
+	} else if (name == "setCurrentProfile") {
+		std::string profile = message->GetArgumentList()->GetString(0);
+		obs_frontend_set_current_profile(profile.c_str());
 
 		return true;
 	} else {
