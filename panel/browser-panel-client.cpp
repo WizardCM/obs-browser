@@ -205,6 +205,21 @@ bool QCefBrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 	    (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
 		browser->ReloadIgnoreCache();
 		return true;
+	} else if (event.windows_key_code == 189 &&
+		(event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr< CefBrowserHost> host = browser->GetHost();
+		host->SetZoomLevel(host->GetZoomLevel() - 0.15);
+		return true;
+	} else if (event.windows_key_code == 187 &&
+		(event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr< CefBrowserHost> host = browser->GetHost();
+		host->SetZoomLevel(host->GetZoomLevel() + 0.15);
+		return true;
+	} else if (event.windows_key_code == 106 &&
+		(event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr< CefBrowserHost> host = browser->GetHost();
+		host->SetZoomLevel(0);
+		return true;
 	}
 #endif
 	return false;
