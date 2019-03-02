@@ -1,5 +1,6 @@
 #include "browser-panel-client.hpp"
 #include <util/dstr.h>
+#include <math.h>
 
 #include <QUrl>
 #include <QDesktopServices>
@@ -11,6 +12,9 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+static int zoomLvls[] = {25,  33,  50,  67,  75,  80,  90,  100,
+			 110, 125, 150, 175, 200, 250, 300, 400};
 
 /* CefClient */
 CefRefPtr<CefLoadHandler> QCefBrowserClient::GetLoadHandler()
@@ -267,6 +271,33 @@ bool QCefBrowserClient::RunContextMenu(
 }
 #endif
 
+static int ZoomLvlToPercent(double zoomlevel)
+{
+	// TODO: This doesn't convert correctly
+	return int((zoomlevel * 25.0) + 100.0);
+}
+
+static double PercentToZoomLvl(int percent)
+{
+	// TODO: This doesn't convert correctly
+	return (double(percent - 100)) / 25.0;
+}
+
+static int GetZoomLevelIndex(int percent)
+{
+	int n = sizeof(zoomLvls) / sizeof(zoomLvls[0]);
+	int i = 0;
+	while (i < n) {
+		if (zoomLvls[i] == percent) {
+			break;
+		}
+		i++;
+	}
+	if (i < n)
+		return i;
+	return -1;
+}
+
 void QCefBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser>,
 				  CefRefPtr<CefFrame> frame, int)
 {
@@ -288,6 +319,39 @@ bool QCefBrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 	    (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
 #endif
 		browser->ReloadIgnoreCache();
+		return true;
+	} else if ((event.windows_key_code == 189 ||
+		    event.windows_key_code == 109) &&
+		   (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr<CefBrowserHost> host = browser->GetHost();
+
+		int currentZoom = ZoomLvlToPercent(host->GetZoomLevel());
+		int idx = GetZoomLevelIndex(currentZoom);
+		if (idx > 0) {
+			blog(LOG_WARNING, "Zooming out from %i to %i",
+			     currentZoom, zoomLvls[idx - 1]);
+			host->SetZoomLevel(PercentToZoomLvl(zoomLvls[idx - 1]));
+		}
+
+		return true;
+	} else if ((event.windows_key_code == 187 ||
+		    event.windows_key_code == 107) &&
+		   (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr<CefBrowserHost> host = browser->GetHost();
+
+		int currentZoom = ZoomLvlToPercent(host->GetZoomLevel());
+		int idx = GetZoomLevelIndex(currentZoom);
+		if (idx < (sizeof(zoomLvls) / sizeof(zoomLvls[0]) - 1)) {
+			blog(LOG_WARNING, "Zooming in from %i to %i",
+			     currentZoom, zoomLvls[idx + 1]);
+			host->SetZoomLevel(PercentToZoomLvl(zoomLvls[idx + 1]));
+		}
+
+		return true;
+	} else if (event.windows_key_code == 106 &&
+		   (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0) {
+		CefRefPtr<CefBrowserHost> host = browser->GetHost();
+		host->SetZoomLevel(0);
 		return true;
 	}
 	return false;
