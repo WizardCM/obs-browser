@@ -55,6 +55,21 @@ public:
 
 	void Resize();
 
+protected:
+	virtual void focusInEvent(QFocusEvent *event) override
+	{
+		QWidget::focusInEvent(event);
+		if (cefBrowser)
+			cefBrowser->GetHost()->SetFocus(true);
+	}
+
+	virtual void focusOutEvent(QFocusEvent *event) override
+	{
+		QWidget::focusOutEvent(event);
+		if (cefBrowser)
+			cefBrowser->GetHost()->SetFocus(false);
+	}
+
 #ifdef __linux__
 private:
 	bool needsDeleteXdndProxy = true;

@@ -3,6 +3,7 @@
 
 #include <QUrl>
 #include <QDesktopServices>
+#include <QCoreApplication>
 #include <QApplication>
 #include <QMenu>
 #include <QThread>
@@ -225,6 +226,16 @@ bool QCefBrowserClient::OnSetFocus(CefRefPtr<CefBrowser>,
 		return true;
 	default:
 		return false;
+	}
+}
+
+void QCefBrowserClient::OnGotFocus(CefRefPtr<CefBrowser> browser)
+{
+	if (widget && widget->cefBrowser &&
+	    widget->cefBrowser->IsSame(browser)) {
+		QMetaObject::invokeMethod(
+			QCoreApplication::instance()->thread(),
+			[=]() { widget->setFocus(); });
 	}
 }
 

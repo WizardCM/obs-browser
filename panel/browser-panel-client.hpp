@@ -73,6 +73,7 @@ public:
 	/* CefFocusHandler */
 	virtual bool OnSetFocus(CefRefPtr<CefBrowser> browser,
 				CefFocusHandler::FocusSource source) override;
+	virtual void OnGotFocus(CefRefPtr<CefBrowser> browser) override;
 
 	/* CefContextMenuHandler */
 	virtual void
