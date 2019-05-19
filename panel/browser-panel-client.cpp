@@ -3,6 +3,8 @@
 
 #include <QUrl>
 #include <QDesktopServices>
+#include <QCoreApplication>
+#include <QThread>
 
 #include <obs-module.h>
 #ifdef _WIN32
@@ -26,6 +28,11 @@ CefRefPtr<CefRequestHandler> QCefBrowserClient::GetRequestHandler()
 }
 
 CefRefPtr<CefLifeSpanHandler> QCefBrowserClient::GetLifeSpanHandler()
+{
+	return this;
+}
+
+CefRefPtr<CefFocusHandler> QCefBrowserClient::GetFocusHandler()
 {
 	return this;
 }
@@ -184,6 +191,39 @@ bool QCefBrowserClient::OnBeforePopup(
 	QUrl url = QUrl(str_url.c_str(), QUrl::TolerantMode);
 	QDesktopServices::openUrl(url);
 	return true;
+}
+
+bool QCefBrowserClient::OnSetFocus(CefRefPtr<CefBrowser> browser,
+				   CefFocusHandler::FocusSource source)
+{
+	blog(LOG_INFO, "About to set focus: source: %s",
+	     source == FOCUS_SOURCE_NAVIGATION
+		     ? "navigation"
+		     : (source == FOCUS_SOURCE_SYSTEM ? "system" : "other"));
+
+	// Allow focus to be set
+	return false;
+}
+
+void QCefBrowserClient::OnGotFocus(CefRefPtr<CefBrowser> browser)
+{
+	if (widget && widget->cefBrowser &&
+	    widget->cefBrowser->IsSame(browser)) {
+		// This works, no changes required
+		blog(LOG_WARNING, "About to gain focus...");
+		QMetaObject::invokeMethod(
+			QCoreApplication::instance()->thread(),
+			[=]() { widget->setFocus(); });
+	}
+}
+
+void QCefBrowserClient::OnTakeFocus(CefRefPtr<CefBrowser> browser, bool next)
+{
+	// TODO This is only triggered when clicking Tab to navigate out
+	// This cannot be manually triggered
+	// TODO When this is triggered, try and focus next Qt widget outside CEF
+	blog(LOG_WARNING, "About to lose focus, %s...",
+	     next ? "next true" : "next false");
 }
 
 void QCefBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser>,

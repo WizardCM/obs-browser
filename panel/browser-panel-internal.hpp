@@ -68,6 +68,25 @@ public:
 
 	void Resize();
 
+protected:
+	virtual void focusInEvent(QFocusEvent *event) override
+	{
+		QWidget::focusInEvent(event);
+		blog(LOG_WARNING, "QCefWidgetInternal focused.");
+		if (cefBrowser)
+			cefBrowser->GetHost()->SetFocus(true);
+	}
+
+	virtual void focusOutEvent(QFocusEvent *event) override
+	{
+		QWidget::focusOutEvent(event);
+		blog(LOG_WARNING, "QCefWidgetInternal unfocused.");
+		// TODO This doesn't trigger OnTakeFocus or anything
+		// https://magpcss.org/ceforum/viewtopic.php?f=6&t=16458&p=40440#p40443
+		if (cefBrowser)
+			cefBrowser->GetHost()->SetFocus(false);
+	}
+
 public slots:
 	void Init();
 };

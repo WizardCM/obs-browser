@@ -10,6 +10,7 @@ class QCefBrowserClient : public CefClient,
 			  public CefRequestHandler,
 			  public CefLifeSpanHandler,
 			  public CefLoadHandler,
+			  public CefFocusHandler,
 			  public CefKeyboardHandler {
 
 public:
@@ -28,6 +29,7 @@ public:
 	virtual CefRefPtr<CefRequestHandler> GetRequestHandler() override;
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
 	virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
+	virtual CefRefPtr<CefFocusHandler> GetFocusHandler() override;
 
 	/* CefDisplayHandler */
 	virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -65,6 +67,12 @@ public:
 #endif
 		bool *no_javascript_access) override;
 
+	/* CefFocusHandler */
+	virtual bool OnSetFocus(CefRefPtr<CefBrowser> browser,
+				CefFocusHandler::FocusSource source) override;
+	virtual void OnGotFocus(CefRefPtr<CefBrowser> browser) override;
+	virtual void OnTakeFocus(CefRefPtr<CefBrowser> browser,
+				 bool next) override;
 	/* CefLoadHandler */
 	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 			       CefRefPtr<CefFrame> frame,

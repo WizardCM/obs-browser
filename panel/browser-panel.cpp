@@ -163,8 +163,6 @@ QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 	setAttribute(Qt::WA_OpaquePaintEvent);
 	setAttribute(Qt::WA_DontCreateNativeAncestors);
 	setAttribute(Qt::WA_NativeWindow);
-
-	setFocusPolicy(Qt::ClickFocus);
 }
 
 QCefWidgetInternal::~QCefWidgetInternal()
