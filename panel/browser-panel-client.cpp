@@ -1,8 +1,12 @@
 #include "browser-panel-client.hpp"
 #include <util/dstr.h>
+#include <string>
+#include <sstream>
 
+#include <QApplication>
 #include <QUrl>
 #include <QDesktopServices>
+#include <QPalette>
 #include <QApplication>
 #include <QMenu>
 #include <QThread>
@@ -272,6 +276,65 @@ void QCefBrowserClient::OnLoadEnd(CefRefPtr<CefBrowser>,
 {
 	if (frame->IsMain() && !script.empty())
 		frame->ExecuteJavaScript(script, CefString(), 0);
+	if (frame->IsMain()) {
+		QPalette p;
+		std::stringstream css;
+
+#define startStyle(selector) css << ".obs-theme-" << selector << " {\n";
+#define addStyleRole(key, role) \
+	css << key << ": " << p.color(role).name().toStdString() << ";\n";
+#define addStyle(key, val) css << key << ": " << val << ";\n";
+#define endStyle() css << "}\n";
+
+		QFont font = QApplication::font();
+		startStyle("body");
+		addStyleRole("background", QPalette::Window);
+		addStyleRole("color", QPalette::WindowText);
+		/* addStyle("font-family",
+			 "\"" + font.family().toStdString() + "\""); */
+		if (font.pixelSize() != -1) {
+			addStyle("font-size", QString("%1px")
+						      .arg(font.pixelSize())
+						      .toStdString());
+		} else if (font.pointSize() != -1) {
+			addStyle("font-size", QString("%1pt")
+						      .arg(font.pointSize())
+						      .toStdString());
+		}
+		endStyle();
+		startStyle("body::selection");
+		addStyleRole("background", QPalette::Highlight);
+		addStyleRole("color", QPalette::HighlightedText);
+		endStyle();
+		startStyle("base");
+		addStyleRole("background", QPalette::Base);
+		endStyle();
+		startStyle("base-alt");
+		addStyleRole("background", QPalette::AlternateBase);
+		endStyle();
+		startStyle("button");
+		addStyleRole("background", QPalette::Button);
+		addStyleRole("color", QPalette::ButtonText);
+		endStyle();
+		startStyle("link");
+		addStyleRole("color", QPalette::Link);
+		endStyle();
+		startStyle("link:visited, link:active");
+		addStyleRole("color", QPalette::LinkVisited);
+		endStyle();
+
+		if (css.str().empty())
+			return;
+		std::string uriCSS = CefURIEncode(css.str(), false).ToString();
+
+		std::string script;
+		script += "const obsCSS = document.createElement('style');";
+		script += "obsCSS.innerHTML = decodeURIComponent(\"" + uriCSS +
+			  "\");";
+		script += "document.querySelector('head').appendChild(obsCSS);";
+
+		frame->ExecuteJavaScript(script, "", 0);
+	}
 }
 
 bool QCefBrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
