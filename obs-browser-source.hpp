@@ -59,6 +59,7 @@ struct BrowserSource {
 	int height = 0;
 	bool fps_custom = false;
 	int fps = 0;
+	bool media_access = false;
 	bool restart = false;
 	bool shutdown_on_invisible = false;
 	bool is_local = false;

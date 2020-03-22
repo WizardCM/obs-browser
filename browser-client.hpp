@@ -34,7 +34,8 @@ class BrowserClient : public CefClient,
 #if CHROME_VERSION_BUILD >= 3683
 		      public CefAudioHandler,
 #endif
-		      public CefLoadHandler {
+		      public CefLoadHandler,
+		      public CefCommandLine {
 
 #if EXPERIMENTAL_SHARED_TEXTURE_SUPPORT_ENABLED
 #if USE_TEXTURE_COPY
@@ -146,6 +147,10 @@ public:
 	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 			       CefRefPtr<CefFrame> frame,
 			       int httpStatusCode) override;
+
+	/* CefCommandLine */
+	virtual void OnBeforeChildProcessLaunch(
+		CefRefPtr<CefCommandLine> command_line) override;
 
 	IMPLEMENT_REFCOUNTING(BrowserClient);
 };

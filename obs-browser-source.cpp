@@ -172,7 +172,7 @@ bool BrowserSource::CreateBrowser()
 		}
 #endif
 
-		cefBrowser = CefBrowserHost::CreateBrowserSync(
+		cefBrowser = CefBrowserHostImpl::CreateBrowserSync(
 			windowInfo, browserClient, url, cefBrowserSettings,
 #if CHROME_VERSION_BUILD >= 3770
 			CefRefPtr<CefDictionaryValue>(),
@@ -406,6 +406,7 @@ void BrowserSource::Update(obs_data_t *settings)
 		int n_height;
 		bool n_fps_custom;
 		int n_fps;
+		bool n_media_access;
 		bool n_shutdown;
 		bool n_restart;
 		bool n_reroute;
@@ -417,6 +418,7 @@ void BrowserSource::Update(obs_data_t *settings)
 		n_height = (int)obs_data_get_int(settings, "height");
 		n_fps_custom = obs_data_get_bool(settings, "fps_custom");
 		n_fps = (int)obs_data_get_int(settings, "fps");
+		n_media_access = obs_data_get_bool(settings, "media_access");
 		n_shutdown = obs_data_get_bool(settings, "shutdown");
 		n_restart = obs_data_get_bool(settings, "restart_when_active");
 		n_css = obs_data_get_string(settings, "css");
@@ -467,7 +469,8 @@ void BrowserSource::Update(obs_data_t *settings)
 
 		if (n_is_local == is_local && n_width == width &&
 		    n_height == height && n_fps_custom == fps_custom &&
-		    n_fps == fps && n_shutdown == shutdown_on_invisible &&
+		    n_fps == fps && n_media_access == media_access &&
+		    n_shutdown == shutdown_on_invisible &&
 		    n_restart == restart && n_css == css && n_url == url &&
 		    n_reroute == reroute_audio) {
 			return;
@@ -478,6 +481,7 @@ void BrowserSource::Update(obs_data_t *settings)
 		height = n_height;
 		fps = n_fps;
 		fps_custom = n_fps_custom;
+		media_access = n_media_access;
 		shutdown_on_invisible = n_shutdown;
 		reroute_audio = n_reroute;
 		restart = n_restart;

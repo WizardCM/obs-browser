@@ -120,6 +120,7 @@ static void browser_source_get_defaults(obs_data_t *settings)
 #else
 	obs_data_set_default_bool(settings, "fps_custom", true);
 #endif
+	obs_data_set_default_bool(settings, "media_stream", false);
 	obs_data_set_default_bool(settings, "shutdown", false);
 	obs_data_set_default_bool(settings, "restart_when_active", false);
 	obs_data_set_default_string(settings, "css", default_css);
@@ -195,6 +196,8 @@ static obs_properties_t *browser_source_get_properties(void *data)
 	obs_property_t *p = obs_properties_add_text(
 		props, "css", obs_module_text("CSS"), OBS_TEXT_MULTILINE);
 	obs_property_text_set_monospace(p, true);
+	obs_properties_add_bool(props, "media_stream",
+				obs_module_text("EnableMediaStream"));
 	obs_properties_add_bool(props, "shutdown",
 				obs_module_text("ShutdownSourceNotVisible"));
 	obs_properties_add_bool(props, "restart_when_active",
