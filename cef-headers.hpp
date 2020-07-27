@@ -36,6 +36,9 @@
 #include <include/cef_version.h>
 #include <include/cef_render_process_handler.h>
 #include <include/cef_request_context_handler.h>
+#if CHROME_VERSION_BUILD == 4638
+#include <include/cef_media_access_handler.h>
+#endif
 #if defined(__APPLE__) && !defined(BROWSER_LEGACY)
 #include "include/wrapper/cef_library_loader.h"
 #endif

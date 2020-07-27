@@ -140,9 +140,9 @@ bool BrowserSource::CreateBrowser()
 		bool hwaccel = false;
 #endif
 
-		CefRefPtr<BrowserClient> browserClient =
-			new BrowserClient(this, hwaccel && tex_sharing_avail,
-					  reroute_audio, webpage_control_level);
+		CefRefPtr<BrowserClient> browserClient = new BrowserClient(
+			this, hwaccel && tex_sharing_avail, reroute_audio,
+			webpage_control_level, webpage_access_level);
 
 		CefWindowInfo windowInfo;
 #if CHROME_VERSION_BUILD < 3071
@@ -455,6 +455,7 @@ void BrowserSource::Update(obs_data_t *settings)
 		bool n_restart;
 		bool n_reroute;
 		ControlLevel n_webpage_control_level;
+		AccessLevel n_webpage_access_level;
 		std::string n_url;
 		std::string n_css;
 
@@ -471,6 +472,8 @@ void BrowserSource::Update(obs_data_t *settings)
 		n_reroute = obs_data_get_bool(settings, "reroute_audio");
 		n_webpage_control_level = static_cast<ControlLevel>(
 			obs_data_get_int(settings, "webpage_control_level"));
+		n_webpage_access_level = static_cast<AccessLevel>(
+			obs_data_get_int(settings, "webpage_access_level"));
 
 		if (n_is_local && !n_url.empty()) {
 			n_url = CefURIEncode(n_url, false);
@@ -518,7 +521,8 @@ void BrowserSource::Update(obs_data_t *settings)
 		    n_fps == fps && n_shutdown == shutdown_on_invisible &&
 		    n_restart == restart && n_css == css && n_url == url &&
 		    n_reroute == reroute_audio &&
-		    n_webpage_control_level == webpage_control_level) {
+		    n_webpage_control_level == webpage_control_level &&
+		    n_webpage_access_level == webpage_access_level) {
 			return;
 		}
 
@@ -530,6 +534,7 @@ void BrowserSource::Update(obs_data_t *settings)
 		shutdown_on_invisible = n_shutdown;
 		reroute_audio = n_reroute;
 		webpage_control_level = n_webpage_control_level;
+		webpage_access_level = n_webpage_access_level;
 		restart = n_restart;
 		css = n_css;
 		url = n_url;

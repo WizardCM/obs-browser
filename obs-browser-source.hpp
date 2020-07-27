@@ -49,6 +49,9 @@ enum class ControlLevel : int {
 };
 inline constexpr ControlLevel DEFAULT_CONTROL_LEVEL = ControlLevel::ReadOnly;
 
+enum class AccessLevel : int { None, Audio, Video, AudioVideo };
+inline constexpr AccessLevel DEFAULT_ACCESS_LEVEL = AccessLevel::None;
+
 extern bool hwaccel;
 
 struct BrowserSource {
@@ -76,6 +79,7 @@ struct BrowserSource {
 	bool first_update = true;
 	bool reroute_audio = true;
 	ControlLevel webpage_control_level = DEFAULT_CONTROL_LEVEL;
+	AccessLevel webpage_access_level = DEFAULT_ACCESS_LEVEL;
 #if defined(BROWSER_EXTERNAL_BEGIN_FRAME_ENABLED) && \
 	defined(SHARED_TEXTURE_SUPPORT_ENABLED)
 	bool reset_frame = false;

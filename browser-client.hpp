@@ -38,6 +38,9 @@ class BrowserClient : public CefClient,
 #if CHROME_VERSION_BUILD >= 3683
 		      public CefAudioHandler,
 #endif
+#if CHROME_VERSION_BUILD == 4638
+		      public CefMediaAccessHandler,
+#endif
 		      public CefLoadHandler {
 
 #ifdef SHARED_TEXTURE_SUPPORT_ENABLED
@@ -51,6 +54,7 @@ class BrowserClient : public CefClient,
 	bool sharing_available = false;
 	bool reroute_audio = true;
 	ControlLevel webpage_control_level = DEFAULT_CONTROL_LEVEL;
+	AccessLevel webpage_access_level = DEFAULT_ACCESS_LEVEL;
 
 public:
 	BrowserSource *bs;
@@ -65,10 +69,12 @@ public:
 #endif
 	inline BrowserClient(BrowserSource *bs_, bool sharing_avail,
 			     bool reroute_audio_,
-			     ControlLevel webpage_control_level_)
+			     ControlLevel webpage_control_level_,
+			     AccessLevel webpage_access_level_)
 		: sharing_available(sharing_avail),
 		  reroute_audio(reroute_audio_),
 		  webpage_control_level(webpage_control_level_),
+		  webpage_access_level(webpage_access_level_),
 		  bs(bs_)
 	{
 	}
@@ -85,6 +91,10 @@ public:
 	GetContextMenuHandler() override;
 #if CHROME_VERSION_BUILD >= 3683
 	virtual CefRefPtr<CefAudioHandler> GetAudioHandler() override;
+#endif
+#if CHROME_VERSION_BUILD == 4638
+	virtual CefRefPtr<CefMediaAccessHandler>
+	GetMediaAccessHandler() override;
 #endif
 
 	virtual bool
@@ -141,6 +151,14 @@ public:
 			    CefRefPtr<CefFrame> frame,
 			    CefRefPtr<CefContextMenuParams> params,
 			    CefRefPtr<CefMenuModel> model) override;
+
+#if CHROME_VERSION_BUILD == 4638
+	/* CefMediaAccessHandler */
+	virtual bool OnRequestMediaAccessPermission(
+		CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+		const CefString &requesting_url, int32_t requested_permissions,
+		CefRefPtr<CefMediaAccessCallback> callback) override;
+#endif
 
 	/* CefRenderHandler */
 #if CHROME_VERSION_BUILD >= 3578
