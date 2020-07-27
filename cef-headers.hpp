@@ -27,6 +27,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
+
 #include <include/cef_app.h>
 #include <include/cef_base.h>
 #include <include/cef_task.h>
@@ -37,6 +38,11 @@
 #include <include/cef_render_process_handler.h>
 #include <include/cef_request_context_handler.h>
 #include <include/cef_jsdialog_handler.h>
+#ifdef CEF_INCLUDE_CEF_MEDIA_ACCESS_HANDLER_H_
+#define ENABLE_MEDIAACCESS 1
+#else
+#define ENABLE_MEDIAACCESS 0
+#endif
 #if defined(__APPLE__) && !defined(BROWSER_LEGACY)
 #include "include/wrapper/cef_library_loader.h"
 #endif

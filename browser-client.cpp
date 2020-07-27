@@ -62,6 +62,13 @@ CefRefPtr<CefContextMenuHandler> BrowserClient::GetContextMenuHandler()
 	return this;
 }
 
+#if ENABLE_MEDIAACCESS
+CefRefPtr<CefMediaAccessHandler> BrowserClient::GetMediaAccessHandler()
+{
+	return this;
+}
+#endif
+
 CefRefPtr<CefAudioHandler> BrowserClient::GetAudioHandler()
 {
 	return reroute_audio ? this : nullptr;
@@ -603,6 +610,42 @@ void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int id)
 		}
 	}
 	bs->audio_streams.erase(pair);
+}
+#endif
+
+#if ENABLE_MEDIAACCESS
+bool BrowserClient::OnRequestMediaAccessPermission(
+	CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefString &,
+	int32_t requested_permissions,
+	CefRefPtr<CefMediaAccessCallback> callback)
+{
+	int allow = CEF_MEDIA_PERMISSION_NONE;
+	const int mic = CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE;
+	const int speaker = CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE;
+	const int cam = CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE;
+	const int display = CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE;
+	switch (webpage_access_level) {
+	case AccessLevel::None:
+		callback.get()->Cancel();
+		break;
+	case AccessLevel::Audio:
+		if (requested_permissions & mic)
+			allow |= mic;
+		if (requested_permissions & speaker)
+			allow |= speaker;
+		break;
+	case AccessLevel::Video:
+		if (requested_permissions & cam)
+			allow |= cam;
+		if (requested_permissions & display)
+			allow |= display;
+		break;
+	case AccessLevel::AudioVideo:
+		allow = requested_permissions;
+		break;
+	}
+	callback.get()->Continue(allow);
+	return true;
 }
 #endif
 

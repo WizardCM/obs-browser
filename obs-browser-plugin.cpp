@@ -236,6 +236,27 @@ static obs_properties_t *browser_source_get_properties(void *data)
 		controlLevel, obs_module_text("WebpageControlLevel.Level.All"),
 		(int)ControlLevel::All);
 
+	obs_property_t *accessLevel = obs_properties_add_list(
+		props, "webpage_access_level",
+		obs_module_text("WebpageAccessLevel"), OBS_COMBO_TYPE_LIST,
+		OBS_COMBO_FORMAT_INT);
+
+	obs_property_list_add_int(
+		accessLevel, obs_module_text("WebpageAccessLevel.Level.None"),
+		(int)AccessLevel::None);
+#if ENABLE_MEDIAACCESS
+	obs_property_list_add_int(
+		accessLevel, obs_module_text("WebpageAccessLevel.Level.Audio"),
+		(int)AccessLevel::Audio);
+	obs_property_list_add_int(
+		accessLevel, obs_module_text("WebpageAccessLevel.Level.Video"),
+		(int)AccessLevel::Video);
+	obs_property_list_add_int(
+		accessLevel,
+		obs_module_text("WebpageAccessLevel.Level.AudioVideo"),
+		(int)AccessLevel::AudioVideo);
+#endif
+
 	obs_properties_add_button(
 		props, "refreshnocache", obs_module_text("RefreshNoCache"),
 		[](obs_properties_t *, obs_property_t *, void *data) {
