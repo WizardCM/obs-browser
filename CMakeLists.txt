@@ -114,6 +114,7 @@ set(obs-browser_SOURCES
 	browser-scheme.cpp
 	browser-client.cpp
 	browser-app.cpp
+	browser-util.cpp
 	deps/json11/json11.cpp
 	deps/base64/base64.cpp
 	deps/wide-string.cpp
@@ -123,6 +124,7 @@ set(obs-browser_HEADERS
 	browser-scheme.hpp
 	browser-client.hpp
 	browser-app.hpp
+	browser-util.hpp
 	browser-version.h
 	deps/json11/json11.hpp
 	deps/base64/base64.hpp
