@@ -29,6 +29,14 @@ public:
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
 	virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
 
+	virtual bool
+	OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+#if CHROME_VERSION_BUILD >= 3770
+				 CefRefPtr<CefFrame> frame,
+#endif
+				 CefProcessId source_process,
+				 CefRefPtr<CefProcessMessage> message) override;
+
 	/* CefDisplayHandler */
 	virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
 				   const CefString &title) override;

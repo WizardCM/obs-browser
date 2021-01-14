@@ -23,6 +23,7 @@
 #include <obs-frontend-api.h>
 #include <obs.hpp>
 #include <util/platform.h>
+#include "browser-util.hpp"
 
 using namespace json11;
 
@@ -99,42 +100,17 @@ bool BrowserClient::OnProcessMessageReceived(
 #endif
 	CefProcessId, CefRefPtr<CefProcessMessage> message)
 {
-	const std::string &name = message->GetName();
-	Json json;
-
 	if (!bs) {
 		return false;
 	}
 
-	if (name == "getCurrentScene") {
-		OBSSource current_scene = obs_frontend_get_current_scene();
-		obs_source_release(current_scene);
+	const std::string &name = message->GetName();
 
-		if (!current_scene)
-			return false;
+	Json json;
+	parse_browser_message(name, json);
 
-		const char *name = obs_source_get_name(current_scene);
-		if (!name)
-			return false;
-
-		json = Json::object{
-			{"name", name},
-			{"width", (int)obs_source_get_width(current_scene)},
-			{"height", (int)obs_source_get_height(current_scene)}};
-
-	} else if (name == "getStatus") {
-		json = Json::object{
-			{"recording", obs_frontend_recording_active()},
-			{"streaming", obs_frontend_streaming_active()},
-			{"recordingPaused", obs_frontend_recording_paused()},
-			{"replaybuffer", obs_frontend_replay_buffer_active()},
-			{"virtualcam", obs_frontend_virtualcam_active()}};
-
-	} else if (name == "saveReplayBuffer") {
-		obs_frontend_replay_buffer_save();
-	} else {
+	if (json == NULL)
 		return false;
-	}
 
 	CefRefPtr<CefProcessMessage> msg =
 		CefProcessMessage::Create("executeCallback");

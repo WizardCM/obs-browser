@@ -1,5 +1,7 @@
 #include "browser-panel-client.hpp"
 #include <util/dstr.h>
+#include "json11/json11.hpp"
+#include "../browser-util.hpp"
 
 #include <QUrl>
 #include <QDesktopServices>
@@ -8,6 +10,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+using namespace json11;
 
 /* CefClient */
 CefRefPtr<CefLoadHandler> QCefBrowserClient::GetLoadHandler()
@@ -214,4 +218,31 @@ bool QCefBrowserClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 	UNUSED_PARAMETER(event);
 #endif
 	return false;
+}
+
+bool QCefBrowserClient::OnProcessMessageReceived(
+	CefRefPtr<CefBrowser> browser,
+#if CHROME_VERSION_BUILD >= 3770
+	CefRefPtr<CefFrame>,
+#endif
+	CefProcessId, CefRefPtr<CefProcessMessage> message)
+{
+	// TODO Does not add handlers for event listeners
+	const std::string &name = message->GetName();
+	Json json;
+	parse_browser_message(name, json);
+
+	if (json == NULL)
+		return false;
+
+	CefRefPtr<CefProcessMessage> msg =
+		CefProcessMessage::Create("executeCallback");
+
+	CefRefPtr<CefListValue> args = msg->GetArgumentList();
+	args->SetInt(0, message->GetArgumentList()->GetInt(0));
+	args->SetString(1, json.dump());
+
+	SendBrowserProcessMessage(browser, PID_RENDERER, msg);
+
+	return true;
 }
