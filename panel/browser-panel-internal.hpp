@@ -78,6 +78,8 @@ private:
 	bool needsDeleteXdndProxy = true;
 	void unsetToplevelXdndProxy();
 #endif
+private:
+	virtual bool eventFilter(QObject *object, QEvent *ev) override;
 
 public slots:
 	void Init();
