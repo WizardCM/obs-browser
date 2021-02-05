@@ -71,6 +71,9 @@ public:
 
 	void Resize();
 
+private:
+	virtual bool eventFilter(QObject *object, QEvent *ev) override;
+
 public slots:
 	void Init();
 };

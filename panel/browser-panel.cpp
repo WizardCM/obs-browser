@@ -164,6 +164,31 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 
 /* ------------------------------------------------------------------------- */
 
+#ifdef _WIN32
+HHOOK _hook;
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-hookproc
+LRESULT __stdcall HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	CWPRETSTRUCT *msgInfo = (CWPRETSTRUCT *)lParam;
+	// if (nCode == HC_ACTION) {
+	if (nCode == 0 && msgInfo != NULL) {
+		switch (msgInfo->message) {
+		case WM_SETFOCUS:
+			// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-setfocus
+			blog(LOG_WARNING, "Focused browser, wParam: %i",
+			     wParam);
+			break;
+		case WM_KILLFOCUS:
+			// https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-killfocus
+			blog(LOG_WARNING, "Unfocused browser, %s OBS",
+			     wParam == 1 ? "focused" : "unfocused");
+			// if wParam == 0, force-send unfocus event to Qt window
+		}
+	}
+	return CallNextHookEx(_hook, nCode, wParam, lParam);
+}
+#endif
+
 QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 				       CefRefPtr<CefRequestContext> rqc_)
 	: QCefWidget(parent), url(url_), rqc(rqc_)
@@ -179,11 +204,32 @@ QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 
 	window = new QWindow();
 	window->setFlags(Qt::FramelessWindowHint);
+	window->installEventFilter(this);
 }
 
 QCefWidgetInternal::~QCefWidgetInternal()
 {
+#ifdef _WIN32
+	if (_hook)
+		UnhookWindowsHookEx(_hook);
+#endif
 	closeBrowser();
+}
+
+bool QCefWidgetInternal::eventFilter(QObject *object, QEvent *ev)
+{
+	switch (ev->type()) {
+	case QEvent::WindowActivate:
+	case QEvent::FocusIn:
+		blog(LOG_WARNING, "Focused Qt");
+		break;
+	case QEvent::WindowDeactivate:
+	case QEvent::FocusOut:
+		blog(LOG_WARNING, "Unfocus Qt");
+		break;
+	}
+	UNUSED_PARAMETER(object);
+	return false;
 }
 
 void QCefWidgetInternal::closeBrowser()
@@ -286,7 +332,21 @@ void QCefWidgetInternal::Init()
 		if (!container) {
 			container =
 				QWidget::createWindowContainer(window, this);
+			container->installEventFilter(this);
 			container->show();
+#ifdef _WIN32
+			/* Temporary: use a timer otherwise the thread may not exist yet */
+			QTimer::singleShot(1000, this, [=]() {
+				blog(LOG_WARNING, "Container shown");
+				DWORD dwProcessId;
+				DWORD dwThreadId = GetWindowThreadProcessId(
+					cefBrowser->GetHost()->GetWindowHandle(),
+					&dwProcessId);
+				SetWindowsHookEx(WH_CALLWNDPROCRET,
+						 HookCallback, NULL,
+						 dwThreadId);
+			});
+#endif
 		}
 
 		Resize();
