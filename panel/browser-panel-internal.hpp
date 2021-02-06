@@ -80,6 +80,8 @@ private:
 #endif
 private:
 	virtual bool eventFilter(QObject *object, QEvent *ev) override;
+	static LRESULT __stdcall focusChanged(int nCode, WPARAM wParam,
+					       LPARAM lParam);
 
 public slots:
 	void Init();

@@ -5,6 +5,7 @@
 
 #include <QWindow>
 #include <QApplication>
+#include <qevent.h>
 
 #ifdef USE_QT_LOOP
 #include <QEventLoop>
@@ -31,6 +32,9 @@ extern os_event_t *cef_started_event;
 std::mutex popup_whitelist_mutex;
 std::vector<PopupWhitelistInfo> popup_whitelist;
 std::vector<PopupWhitelistInfo> forced_popups;
+#ifdef _WIN32
+HHOOK _focusHook;
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -200,6 +204,7 @@ QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 
 #ifndef __APPLE__
 	window = new QWindow();
+	window->setObjectName("webPanelWrapper");
 	window->setFlags(Qt::FramelessWindowHint);
 	window->installEventFilter(this);
 #endif
@@ -216,6 +221,7 @@ QCefWidgetInternal::~QCefWidgetInternal()
 
 bool QCefWidgetInternal::eventFilter(QObject *object, QEvent *ev)
 {
+	QWindow *focusedWindow = QGuiApplication::focusWindow();
 	switch (ev->type()) {
 	case QEvent::WindowActivate:
 	case QEvent::FocusIn:
@@ -223,7 +229,15 @@ bool QCefWidgetInternal::eventFilter(QObject *object, QEvent *ev)
 		break;
 	case QEvent::WindowDeactivate:
 	case QEvent::FocusOut:
-		blog(LOG_WARNING, "Unfocus Qt");
+		blog(LOG_WARNING, "Unfocus Qt: %s -- %s",
+		     QGuiApplication::applicationState() ==
+				     Qt::ApplicationActive
+			     ? "app still thinks it's active"
+			     : "app is no longer active",
+		     focusedWindow == nullptr ? "no window focused"
+					      : focusedWindow->objectName()
+							.toStdString()
+							.c_str());
 		break;
 	}
 	UNUSED_PARAMETER(object);
@@ -419,14 +433,17 @@ void QCefWidgetInternal::Init()
 #ifdef _WIN32
 			/* Temporary: use a timer otherwise the thread may not exist yet */
 			QTimer::singleShot(1000, this, [=]() {
+				if (_focusHook)
+					return;
 				blog(LOG_WARNING, "Container shown");
 				DWORD dwProcessId;
 				DWORD dwThreadId = GetWindowThreadProcessId(
 					cefBrowser->GetHost()->GetWindowHandle(),
 					&dwProcessId);
-				SetWindowsHookEx(WH_CALLWNDPROCRET,
-						 HookCallback, NULL,
-						 dwThreadId);
+				SetWindowsHookEx(
+					WH_CALLWNDPROCRET,
+					&QCefWidgetInternal::focusChanged, NULL,
+					dwThreadId);
 			});
 #endif
 		}
@@ -434,6 +451,48 @@ void QCefWidgetInternal::Init()
 		Resize();
 #endif
 	}
+}
+
+LRESULT __stdcall QCefWidgetInternal::focusChanged(int nCode, WPARAM wParam,
+						   LPARAM lParam)
+{
+	CWPRETSTRUCT *msgInfo = (CWPRETSTRUCT *)lParam;
+	if (nCode == 0 && msgInfo != NULL && msgInfo->message == WM_KILLFOCUS) {
+		if (wParam == 0) {
+			// QGuiApplication::clearFocus();
+			if (QApplication::focusWidget()) {
+				QApplication::focusWidget()->clearFocus();
+				blog(LOG_WARNING, "Clearing focus manually");
+			} else if (QGuiApplication::focusWindow()) {
+				QWindow *widgetWindow =
+					QGuiApplication::focusWindow();
+
+				if (widgetWindow->objectName().compare("webPanelWrapper") == 0) {
+					QEvent appDeactivate(
+						QEvent::ApplicationDeactivate);
+					QCoreApplication::sendEvent(
+						qApp, &appDeactivate);
+					QApplicationStateChangeEvent event(
+						Qt::ApplicationInactive);
+					QCoreApplication::sendEvent(qApp,
+								    &event);
+					emit qApp->applicationStateChanged(
+						Qt::ApplicationInactive);
+				}
+
+				blog(LOG_WARNING,
+				     "No widget is focused, but this window is still focused");
+			} else if (QApplication::activeWindow()) {
+				// TODO This doesn't cause applicationState to change
+				QApplication::setActiveWindow(nullptr);
+				blog(LOG_WARNING,
+				     "No widget is focused, but this window is still active");
+			} else {
+				blog(LOG_ERROR, "No widget is focused");
+			}
+		}
+	}
+	return CallNextHookEx(_focusHook, nCode, wParam, lParam);
 }
 
 void QCefWidgetInternal::resizeEvent(QResizeEvent *event)
