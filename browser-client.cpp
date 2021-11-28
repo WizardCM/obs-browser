@@ -564,59 +564,29 @@ bool BrowserClient::OnRequestMediaAccessPermission(
 	CefRefPtr<CefMediaAccessCallback> callback)
 {
 	int allow_permissions = CEF_MEDIA_PERMISSION_NONE;
-	const bool want_audio_device =
-		+requested_permissions &
-		CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE;
-	const bool want_video_device =
-		+requested_permissions &
-		CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE;
-	const bool want_desktop_audio =
-		+requested_permissions &
-		CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE;
-	const bool want_desktop_video =
-		+requested_permissions &
-		CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE;
 	switch (webpage_access_level) {
 	case AccessLevel::None:
-		callback.get()->Continue(0);
-		return true;
+		callback.get()->Cancel();
+		break;
 	case AccessLevel::Audio:
-		allow_permissions |=
-			want_audio_device
-				? CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE
-				: 0;
-		allow_permissions |=
-			want_desktop_audio
-				? CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE
-				: 0;
+		allow_permissions |= CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE |
+				     CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE;
+		if (requested_permissions &
+			    CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE ||
+		    requested_permissions &
+			    CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE)
+			allow_permissions = requested_permissions;
+
 		break;
 	case AccessLevel::Video:
-		allow_permissions |=
-			want_video_device
-				? CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE
-				: 0;
-		allow_permissions |=
-			want_desktop_video
-				? CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE
-				: 0;
+		if (requested_permissions &
+			    CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE ||
+		    requested_permissions &
+			    CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE)
+			allow_permissions = requested_permissions;
 		break;
 	case AccessLevel::AudioVideo:
-		allow_permissions |=
-			want_audio_device
-				? CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE
-				: 0;
-		allow_permissions |=
-			want_desktop_audio
-				? CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE
-				: 0;
-		allow_permissions |=
-			want_video_device
-				? CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE
-				: 0;
-		allow_permissions |=
-			want_desktop_video
-				? CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE
-				: 0;
+		allow_permissions = requested_permissions;
 		break;
 	}
 	callback.get()->Continue(allow_permissions);
