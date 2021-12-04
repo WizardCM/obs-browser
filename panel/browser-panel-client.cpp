@@ -10,6 +10,7 @@
 #include <QInputDialog>
 #include <QRegularExpression>
 #include <QLabel>
+#include <QStyle>
 
 #include <obs-module.h>
 #ifdef _WIN32
@@ -314,7 +315,8 @@ bool QCefBrowserClient::OnJSDialog(CefRefPtr<CefBrowser>, const CefString &,
 				   bool &)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-	QString parentTitle = widget->parentWidget()->windowTitle();
+	QWidget *parent = widget->parentWidget();
+	QString parentTitle = parent->windowTitle();
 	std::string default_value = default_prompt_text;
 	QString msg_raw(message_text.ToString().c_str());
 	// Replace <br> with standard newline as we will render in plaintext
@@ -324,7 +326,7 @@ bool QCefBrowserClient::OnJSDialog(CefRefPtr<CefBrowser>, const CefString &,
 	QString msg = QString("%1\n\n\n%2").arg(msg_raw).arg(submsg);
 
 	if (dialog_type == JSDIALOGTYPE_PROMPT) {
-		auto msgbox = [msg, default_value, callback]() {
+		auto msgbox = [msg, default_value, parent, callback]() {
 			QInputDialog *dlg = new QInputDialog(nullptr);
 			dlg->setWindowFlag(Qt::WindowStaysOnTopHint, true);
 			dlg->setWindowFlag(Qt::WindowContextHelpButtonHint,
@@ -344,18 +346,32 @@ bool QCefBrowserClient::OnJSDialog(CefRefPtr<CefBrowser>, const CefString &,
 
 			QWidget::connect(dlg, &QInputDialog::finished,
 					 finished);
+
+			QRect pos = parent->geometry();
+			if (!parent->isWindow()) {
+				// Get global position of the docked browser
+				QPoint tL = parent->mapToGlobal(
+					parent->rect().topLeft());
+				pos = QRect(tL.x(), tL.y(), pos.width(),
+					    pos.height());
+			}
 			dlg->open();
+			dlg->setLabelText(msg);
+
+			pos = QStyle::alignedRect(Qt::LeftToRight,
+						  Qt::AlignCenter, dlg->size(),
+						  pos);
+
 			if (QLabel *lbl = dlg->findChild<QLabel *>()) {
 				// Force plaintext manually
 				lbl->setTextFormat(Qt::PlainText);
 			}
-			dlg->setLabelText(msg);
 		};
 		QMetaObject::invokeMethod(
 			QCoreApplication::instance()->thread(), msgbox);
 		return true;
 	}
-	auto msgbox = [msg, dialog_type, callback]() {
+	auto msgbox = [msg, dialog_type, parent, callback]() {
 		QMessageBox *dlg = new QMessageBox(nullptr);
 		dlg->setStandardButtons(QMessageBox::Ok);
 		dlg->setWindowFlag(Qt::WindowStaysOnTopHint, true);
@@ -383,7 +399,17 @@ bool QCefBrowserClient::OnJSDialog(CefRefPtr<CefBrowser>, const CefString &,
 
 		QWidget::connect(dlg, &QMessageBox::finished, finished);
 
+		QRect pos = parent->geometry();
+		if (!parent->isWindow()) {
+			// Get global position of the docked browser
+			QPoint tL =
+				parent->mapToGlobal(parent->rect().topLeft());
+			pos = QRect(tL.x(), tL.y(), pos.width(), pos.height());
+		}
 		dlg->open();
+		pos = QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter,
+					  dlg->size(), pos);
+		dlg->setGeometry(pos);
 	};
 	QMetaObject::invokeMethod(QCoreApplication::instance()->thread(),
 				  msgbox);
