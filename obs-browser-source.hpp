@@ -115,6 +115,7 @@ struct BrowserSource {
 	bool CreateBrowser();
 	void DestroyBrowser();
 	void ExecuteOnBrowser(BrowserFunc func, bool async = false);
+	void UpdateCSS(CefRefPtr<CefFrame> frame);
 
 	/* ---------------------------- */
 

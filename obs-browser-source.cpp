@@ -167,6 +167,24 @@ void BrowserSource::ExecuteOnBrowser(BrowserFunc func, bool async)
 	}
 }
 
+void BrowserSource::UpdateCSS(CefRefPtr<CefFrame> frame)
+{
+	
+	std::string uriEncodedCSS = CefURIEncode(css, false).ToString();
+
+	std::string elId = "'obs_browser_style_injected'";
+	std::string script;
+	script += "var oldCSS = document.getElementById(" + elId + ");";
+	script += "oldCSS ? oldCSS.remove() : null;";
+	script += "var obsCSS = document.createElement('style');";
+	script += "obsCSS.id = " + elId + ";";
+	script += "obsCSS.innerHTML = decodeURIComponent(\"" + uriEncodedCSS +
+		  "\");";
+	script += "document.querySelector('head').appendChild(obsCSS);";
+
+	frame->ExecuteJavaScript(script, "", 0);
+}
+
 bool BrowserSource::CreateBrowser()
 {
 	return QueueCEFTask([this]() {
@@ -566,15 +584,18 @@ void BrowserSource::Update(obs_data_t *settings)
 			n_is_local = true;
 		}
 #endif
-
-		if (n_is_local == is_local && n_width == width &&
+		bool resized =  n_width != width || n_height != height;
+		bool changed = n_url != url || n_is_local != is_local ||
+			       fps != n_fps || fps_custom != n_fps_custom;
+		bool cssUpdated = n_css != css;
+		/*if (n_is_local == is_local && n_width == width &&
 		    n_height == height && n_fps_custom == fps_custom &&
 		    n_fps == fps && n_shutdown == shutdown_on_invisible &&
 		    n_restart == restart && n_css == css && n_url == url &&
 		    n_reroute == reroute_audio &&
 		    n_webpage_control_level == webpage_control_level) {
 			return;
-		}
+		}*/
 
 		is_local = n_is_local;
 		width = n_width;
@@ -588,18 +609,44 @@ void BrowserSource::Update(obs_data_t *settings)
 		css = n_css;
 		url = n_url;
 
+		CefRefPtr<CefBrowser> browser = GetBrowser();
+		if (!!browser && (resized || changed || cssUpdated)) {
+			// TODO: Does not resize larger properly with hwaccel (shared texture is not resized)
+			if (resized)
+				browser->GetHost()->WasResized();
+
+			// TODO Url change
+			// TODO FPS change
+			if (changed) {
+				browser->GetMainFrame()->LoadURL(n_url);
+			}
+
+			if (cssUpdated) {
+				// TODO CSS reload
+				UpdateCSS(browser->GetMainFrame());
+			}
+
+
+			// TODO Audio config change
+		}  else if (!shutdown_on_invisible || obs_source_showing(source)) {
+			// TODO This code path is broken if browser is not destroyed beforehand
+			// However, we don't want to destroy if nothing has changed
+			create_browser = true;
+		}
+		first_update = false;
+
 		obs_source_set_audio_active(source, reroute_audio);
 	}
 
-	DestroyBrowser();
-	DestroyTextures();
-#if CHROME_VERSION_BUILD < 4103
-	ClearAudioStreams();
-#endif
-	if (!shutdown_on_invisible || obs_source_showing(source))
-		create_browser = true;
-
-	first_update = false;
+// 	DestroyBrowser();
+// 	DestroyTextures();
+// #if CHROME_VERSION_BUILD < 4103
+// 	ClearAudioStreams();
+// #endif
+// 	if (!shutdown_on_invisible || obs_source_showing(source))
+// 		create_browser = true;
+// 
+// 	first_update = false;
 }
 
 void BrowserSource::Tick()
