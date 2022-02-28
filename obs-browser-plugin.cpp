@@ -292,7 +292,7 @@ static obs_missing_files_t *browser_source_missingfiles(void *data)
 
 static CefRefPtr<BrowserApp> app;
 
-static void BrowserInit(void)
+static bool BrowserInit(void)
 {
 	string path = obs_get_module_binary_path(obs_current_module());
 	path = path.substr(0, path.find_last_of('/') + 1);
@@ -392,9 +392,9 @@ static void BrowserInit(void)
 	 * we'll just switch back to the static library but I doubt we'll need
 	 * to. */
 	uintptr_t zeroed_memory_lol[32] = {};
-	CefInitialize(args, settings, app, zeroed_memory_lol);
+	bool loaded = CefInitialize(args, settings, app, zeroed_memory_lol);
 #else
-	CefInitialize(args, settings, app, nullptr);
+	bool loaded = CefInitialize(args, settings, app, nullptr);
 #endif
 #if !ENABLE_LOCAL_FILE_URL_SCHEME
 	/* Register http://absolute/ scheme handler for older
@@ -402,7 +402,14 @@ static void BrowserInit(void)
 	CefRegisterSchemeHandlerFactory("http", "absolute",
 					new BrowserSchemeHandlerFactory());
 #endif
-	os_event_signal(cef_started_event);
+	if (loaded) {
+		blog(LOG_INFO, "[obs-browser]: CEF successfully loaded.");
+		os_event_signal(cef_started_event);
+	} else {
+		blog(LOG_ERROR,
+		     "[obs-browser]: Failed to initialise CEF. Browser components unavailable.");
+	}
+	return loaded;
 }
 
 static void BrowserShutdown(void)
@@ -419,7 +426,10 @@ static void BrowserShutdown(void)
 #ifndef ENABLE_BROWSER_QT_LOOP
 static void BrowserManagerThread(void)
 {
-	BrowserInit();
+	bool loaded = BrowserInit();
+	if (!loaded)
+		return;
+
 	CefRunMessageLoop();
 	BrowserShutdown();
 }
@@ -430,6 +440,8 @@ extern "C" EXPORT void obs_browser_initialize(void)
 	if (!os_atomic_set_bool(&manager_initialized, true)) {
 #ifdef ENABLE_BROWSER_QT_LOOP
 		BrowserInit();
+		if (!loaded)
+			return;
 #else
 		manager_thread = thread(BrowserManagerThread);
 #endif
