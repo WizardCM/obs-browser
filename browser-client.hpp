@@ -148,6 +148,8 @@ public:
 					 bool new_texture) override;
 #endif
 #endif
+
+	/* CefAudioHandler */
 #if CHROME_VERSION_BUILD >= 4103
 	virtual void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
 					 const float **data, int frames,
@@ -183,6 +185,9 @@ public:
 	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
 			       CefRefPtr<CefFrame> frame,
 			       int httpStatusCode) override;
+
+	void SetRerouteAudio(bool reroute);
+	void SetControlLevel(ControlLevel level);
 
 	IMPLEMENT_REFCOUNTING(BrowserClient);
 };

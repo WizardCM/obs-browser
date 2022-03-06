@@ -41,6 +41,13 @@ struct AudioStream {
 };
 #endif
 
+static const char *default_css = "\
+body { \
+background-color: rgba(0, 0, 0, 0); \
+margin: 0px auto; \
+overflow: hidden; \
+}";
+
 enum class ControlLevel : int {
 	None,
 	ReadObs,
@@ -120,6 +127,7 @@ struct BrowserSource {
 	bool CreateBrowser();
 	void DestroyBrowser();
 	void ExecuteOnBrowser(BrowserFunc func, bool async = false);
+	void UpdateCSS(CefRefPtr<CefFrame> frame);
 
 	/* ---------------------------- */
 

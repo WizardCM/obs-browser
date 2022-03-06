@@ -64,7 +64,7 @@ CefRefPtr<CefContextMenuHandler> BrowserClient::GetContextMenuHandler()
 
 CefRefPtr<CefAudioHandler> BrowserClient::GetAudioHandler()
 {
-	return reroute_audio ? this : nullptr;
+	return this;
 }
 
 #if CHROME_VERSION_BUILD >= 4638
@@ -573,6 +573,9 @@ static CefAudioHandler::ChannelLayout Convert2CEFSpeakerLayout(int channels)
 bool BrowserClient::GetAudioParameters(CefRefPtr<CefBrowser> browser,
 				       CefAudioParameters &params)
 {
+	if (!reroute_audio)
+		return false;
+
 	UNUSED_PARAMETER(browser);
 	int channels = (int)audio_output_get_channels(obs_get_audio());
 	params.channel_layout = Convert2CEFSpeakerLayout(channels);
@@ -667,18 +670,8 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame> frame,
 		return;
 	}
 
-	if (frame->IsMain() && bs->css.length()) {
-		std::string uriEncodedCSS =
-			CefURIEncode(bs->css, false).ToString();
-
-		std::string script;
-		script += "const obsCSS = document.createElement('style');";
-		script += "obsCSS.innerHTML = decodeURIComponent(\"" +
-			  uriEncodedCSS + "\");";
-		script += "document.querySelector('head').appendChild(obsCSS);";
-
-		frame->ExecuteJavaScript(script, "", 0);
-	}
+	if (frame->IsMain())
+		bs->UpdateCSS(frame);
 }
 
 bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser>,
@@ -701,4 +694,14 @@ bool BrowserClient::OnConsoleMessage(CefRefPtr<CefBrowser>,
 	blog(errorLevel, "obs-browser: %s (source: %s:%d)",
 	     message.ToString().c_str(), source.ToString().c_str(), line);
 	return false;
+}
+
+void BrowserClient::SetControlLevel(ControlLevel level)
+{
+	webpage_control_level = level;
+}
+
+void BrowserClient::SetRerouteAudio(bool reroute)
+{
+	reroute_audio = reroute;
 }

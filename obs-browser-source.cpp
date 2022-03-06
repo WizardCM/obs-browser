@@ -167,6 +167,26 @@ void BrowserSource::ExecuteOnBrowser(BrowserFunc func, bool async)
 	}
 }
 
+void BrowserSource::UpdateCSS(CefRefPtr<CefFrame> frame)
+{
+
+	// CefURIEncode will error in Debug if `css` is empty
+	std::string uriEncodedCSS =
+		css.length() ? CefURIEncode(css, false).ToString() : "";
+
+	std::string elId = "'obs_browser_style_injected'";
+	std::string script;
+	script += "var oldCSS = document.getElementById(" + elId + ");";
+	script += "oldCSS ? oldCSS.remove() : null;";
+	script += "var obsCSS = document.createElement('style');";
+	script += "obsCSS.id = " + elId + ";";
+	script += "obsCSS.innerHTML = decodeURIComponent(\"" + uriEncodedCSS +
+		  "\");";
+	script += "document.querySelector('head').appendChild(obsCSS);";
+
+	frame->ExecuteJavaScript(script, "", 0);
+}
+
 bool BrowserSource::CreateBrowser()
 {
 	return QueueCEFTask([this]() {
@@ -235,8 +255,7 @@ bool BrowserSource::CreateBrowser()
 
 		SetBrowser(browser);
 
-		if (reroute_audio)
-			cefBrowser->GetHost()->SetAudioMuted(true);
+		cefBrowser->GetHost()->SetAudioMuted(reroute_audio);
 		if (obs_source_showing(source))
 			is_showing = true;
 
@@ -491,125 +510,167 @@ inline void BrowserSource::SignalBeginFrame()
 
 void BrowserSource::Update(obs_data_t *settings)
 {
+	bool destroy = !!settings;
+
 	if (settings) {
-		bool n_is_local;
-		int n_width;
-		int n_height;
-		bool n_fps_custom;
-		int n_fps;
-		bool n_shutdown;
-		bool n_restart;
-		bool n_reroute;
-		ControlLevel n_webpage_control_level;
-		std::string n_url;
-		std::string n_css;
+	bool n_is_local;
+	int n_width;
+	int n_height;
+	bool n_fps_custom;
+	int n_fps;
+	bool n_shutdown;
+	bool n_restart;
+	bool n_reroute;
+	ControlLevel n_webpage_control_level;
+	std::string n_url;
+	std::string n_css;
 
-		n_is_local = obs_data_get_bool(settings, "is_local_file");
-		n_width = (int)obs_data_get_int(settings, "width");
-		n_height = (int)obs_data_get_int(settings, "height");
-		n_fps_custom = obs_data_get_bool(settings, "fps_custom");
-		n_fps = (int)obs_data_get_int(settings, "fps");
-		n_shutdown = obs_data_get_bool(settings, "shutdown");
-		n_restart = obs_data_get_bool(settings, "restart_when_active");
-		n_css = obs_data_get_string(settings, "css");
-		n_url = obs_data_get_string(settings,
-					    n_is_local ? "local_file" : "url");
-		n_reroute = obs_data_get_bool(settings, "reroute_audio");
-		n_webpage_control_level = static_cast<ControlLevel>(
-			obs_data_get_int(settings, "webpage_control_level"));
+	n_is_local = obs_data_get_bool(settings, "is_local_file");
+	n_width = (int)obs_data_get_int(settings, "width");
+	n_height = (int)obs_data_get_int(settings, "height");
+	n_fps_custom = obs_data_get_bool(settings, "fps_custom");
+	n_fps = (int)obs_data_get_int(settings, "fps");
+	n_shutdown = obs_data_get_bool(settings, "shutdown");
+	n_restart = obs_data_get_bool(settings, "restart_when_active");
+	n_css = obs_data_get_string(settings, "css");
+	n_url = obs_data_get_string(settings,
+				    n_is_local ? "local_file" : "url");
+	n_reroute = obs_data_get_bool(settings, "reroute_audio");
+	n_webpage_control_level = static_cast<ControlLevel>(
+		obs_data_get_int(settings, "webpage_control_level"));
 
-		if (n_is_local && !n_url.empty()) {
-			n_url = CefURIEncode(n_url, false);
+	if (n_is_local && !n_url.empty()) {
+		n_url = CefURIEncode(n_url, false);
 
 #ifdef _WIN32
-			size_t slash = n_url.find("%2F");
-			size_t colon = n_url.find("%3A");
+		size_t slash = n_url.find("%2F");
+		size_t colon = n_url.find("%3A");
 
-			if (slash != std::string::npos &&
-			    colon != std::string::npos && colon < slash)
-				n_url.replace(colon, 3, ":");
+		if (slash != std::string::npos && colon != std::string::npos &&
+		    colon < slash)
+			n_url.replace(colon, 3, ":");
 #endif
 
-			while (n_url.find("%5C") != std::string::npos)
-				n_url.replace(n_url.find("%5C"), 3, "/");
+		while (n_url.find("%5C") != std::string::npos)
+			n_url.replace(n_url.find("%5C"), 3, "/");
 
-			while (n_url.find("%2F") != std::string::npos)
-				n_url.replace(n_url.find("%2F"), 3, "/");
+		while (n_url.find("%2F") != std::string::npos)
+			n_url.replace(n_url.find("%2F"), 3, "/");
 
 #if !ENABLE_LOCAL_FILE_URL_SCHEME
-			/* http://absolute/ based mapping for older CEF */
-			n_url = "http://absolute/" + n_url;
+		/* http://absolute/ based mapping for older CEF */
+		n_url = "http://absolute/" + n_url;
 #elif defined(_WIN32)
-			/* Widows-style local file URL:
+		/* Widows-style local file URL:
 			 * file:///C:/file/path.webm */
-			n_url = "file:///" + n_url;
+		n_url = "file:///" + n_url;
 #else
-			/* UNIX-style local file URL:
+		/* UNIX-style local file URL:
 			 * file:///home/user/file.webm */
-			n_url = "file://" + n_url;
+		n_url = "file://" + n_url;
 #endif
-		}
-
-#if ENABLE_LOCAL_FILE_URL_SCHEME
-		if (astrcmpi_n(n_url.c_str(), "http://absolute/", 16) == 0) {
-			/* Replace http://absolute/ URLs with file://
-			 * URLs if file:// URLs are enabled */
-			n_url = "file:///" + n_url.substr(16);
-			n_is_local = true;
-		}
-#endif
-
-		if (n_is_local == is_local && n_fps_custom == fps_custom &&
-		    n_fps == fps && n_shutdown == shutdown_on_invisible &&
-		    n_restart == restart && n_css == css && n_url == url &&
-		    n_reroute == reroute_audio &&
-		    n_webpage_control_level == webpage_control_level) {
-
-			if (n_width == width && n_height == height)
-				return;
-
-			width = n_width;
-			height = n_height;
-			ExecuteOnBrowser(
-				[=](CefRefPtr<CefBrowser> cefBrowser) {
-					const CefSize cefSize(width, height);
-					cefBrowser->GetHost()
-						->GetClient()
-						->GetDisplayHandler()
-						->OnAutoResize(cefBrowser,
-							       cefSize);
-					cefBrowser->GetHost()->WasResized();
-					cefBrowser->GetHost()->Invalidate(
-						PET_VIEW);
-				},
-				true);
-			return;
-		}
-
-		is_local = n_is_local;
-		width = n_width;
-		height = n_height;
-		fps = n_fps;
-		fps_custom = n_fps_custom;
-		shutdown_on_invisible = n_shutdown;
-		reroute_audio = n_reroute;
-		webpage_control_level = n_webpage_control_level;
-		restart = n_restart;
-		css = n_css;
-		url = n_url;
-
-		obs_source_set_audio_active(source, reroute_audio);
 	}
 
-	DestroyBrowser();
-	DestroyTextures();
-#if CHROME_VERSION_BUILD < 4103
-	ClearAudioStreams();
+#if ENABLE_LOCAL_FILE_URL_SCHEME
+	if (astrcmpi_n(n_url.c_str(), "http://absolute/", 16) == 0) {
+		/* Replace http://absolute/ URLs with file://
+			 * URLs if file:// URLs are enabled */
+		n_url = "file:///" + n_url.substr(16);
+		n_is_local = true;
+	}
 #endif
+
+	bool resized = n_width != width || n_height != height;
+	bool pathUpdated = n_url != url || n_is_local != is_local;
+	bool cssUpdated = n_css != css;
+
+	if (cefBrowser) {
+		CefRefPtr<CefClient> client =
+			cefBrowser->GetHost()->GetClient();
+		BrowserClient *bc =
+			reinterpret_cast<BrowserClient *>(client.get());
+
+		if (n_webpage_control_level != webpage_control_level && bc)
+			bc->SetControlLevel(n_webpage_control_level);
+
+		if (n_reroute != reroute_audio && bc)
+			bc->SetRerouteAudio(n_reroute);
+	} else {
+		destroy = true;
+	}
+	obs_source_set_audio_active(source, n_reroute);
+	if (cefBrowser)
+		cefBrowser->GetHost()->SetAudioMuted(n_reroute);
+
+	is_local = n_is_local;
+	width = n_width;
+	height = n_height;
+	fps = n_fps;
+	fps_custom = n_fps_custom;
+	shutdown_on_invisible = n_shutdown;
+	reroute_audio = n_reroute;
+	webpage_control_level = n_webpage_control_level;
+	restart = n_restart;
+	css = n_css;
+	url = n_url;
+
+	ExecuteOnBrowser(
+		[=](CefRefPtr<CefBrowser> cefBrowser) {
+			if (destroy || !cefBrowser)
+				return;
+
+			if (n_fps_custom)
+				cefBrowser->GetHost()->SetWindowlessFrameRate(
+					n_fps);
+
+			if (pathUpdated)
+				cefBrowser->GetMainFrame()->LoadURL(n_url);
+
+			if (resized) {
+				const CefSize cefSize(width, height);
+				cefBrowser->GetHost()
+					->GetClient()
+					->GetDisplayHandler()
+					->OnAutoResize(cefBrowser, cefSize);
+				cefBrowser->GetHost()->WasResized();
+				cefBrowser->GetHost()->Invalidate(PET_VIEW);
+			}
+		},
+		true);
+
+	if (cssUpdated && cefBrowser)
+		UpdateCSS(cefBrowser->GetMainFrame());
+
+	} else {
+		destroy = true;
+	}
+
+	// Don't log URL for security purposes
+	blog(LOG_INFO,
+	     "[obs-browser: '%s']: update settings:\n"
+	     "\tlocal: %s\n"
+	     "\tresolution: %ix%i\n"
+	     "\tfps: %i %s\n"
+	     "\tshutdown on invisible: %s\n"
+	     "\treroute audio: %s\n"
+	     "\tcontrol level: %i\n"
+	     "\trestart on active: %s\n"
+	     "\tcss: (%s)\n",
+	     obs_source_get_name(source), is_local ? "true" : "false", width,
+	     height, fps, fps_custom ? "(custom)" : "",
+	     shutdown_on_invisible ? "true" : "false",
+	     reroute_audio ? "true" : "false", webpage_control_level,
+	     restart ? "true" : "false",
+	     strcmp(css.c_str(), default_css) == 0 ? "default" : "custom");
+
+	if (!destroy)
+		return;
+
 	if (!shutdown_on_invisible || obs_source_showing(source))
 		create_browser = true;
 
-	first_update = false;
+	DestroyBrowser();
+	DestroyTextures();
 }
 
 void BrowserSource::Tick()
