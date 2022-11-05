@@ -19,6 +19,7 @@
 #include <util/threading.h>
 #include <util/base.h>
 #include <thread>
+#include <set>
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 #include <X11/Xlib.h>
@@ -31,6 +32,9 @@ extern os_event_t *cef_started_event;
 std::mutex popup_whitelist_mutex;
 std::vector<PopupWhitelistInfo> popup_whitelist;
 std::vector<PopupWhitelistInfo> forced_popups;
+
+static std::recursive_mutex focusMutex;
+static std::set<QWidget *> dockWindows;
 
 /* ------------------------------------------------------------------------- */
 
@@ -131,6 +135,84 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 
 /* ------------------------------------------------------------------------- */
 
+static void HandleWidgetUnfocus()
+{
+	std::lock_guard<decltype(focusMutex)> guard(focusMutex);
+
+	for (auto &widget : dockWindows) {
+		if (widget->hasFocus())
+			widget->clearFocus();
+	}
+}
+
+#ifdef _WIN32
+static HHOOK focusHook = NULL;
+
+static LRESULT CALLBACK FocusTrackerHook(_In_ int nCode, _In_ WPARAM wParam,
+					 _In_ LPARAM lParam)
+{
+	CWPSTRUCT *msg = (CWPSTRUCT *)lParam;
+
+	if (msg->message == WM_ACTIVATEAPP && !msg->wParam)
+		HandleWidgetUnfocus();
+
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+#endif
+
+static void InitFocusTracker()
+{
+#ifdef _WIN32
+	if (focusHook)
+		return;
+
+	focusHook = SetWindowsHookExA(WH_CALLWNDPROC, FocusTrackerHook, NULL,
+				      GetCurrentThreadId());
+
+	if (!focusHook) {
+		blog(LOG_ERROR,
+		     "[obs-browser] Failed to initialise browser panel focus override");
+	}
+#endif
+}
+
+static void ShutdownFocusTracker()
+{
+#ifdef _WIN32
+	if (!focusHook)
+		return;
+
+	if (!UnhookWindowsHookEx(focusHook)) {
+		blog(LOG_ERROR,
+		     "[obs-browser] Failed to shut down browser panel focus override");
+	} else {
+		focusHook = NULL;
+	}
+#endif
+}
+
+static void RegisterFocusTrackerWidget(QWidget *widget)
+{
+	std::lock_guard<decltype(focusMutex)> guard(focusMutex);
+
+	dockWindows.emplace(widget);
+
+	if (dockWindows.size() == 1)
+		InitFocusTracker();
+}
+
+static void UnregisterFocusTrackerWidget(QWidget *widget)
+{
+	std::lock_guard<decltype(focusMutex)> guard(focusMutex);
+
+	dockWindows.erase(widget);
+
+	if (dockWindows.size() == 0)
+		ShutdownFocusTracker();
+}
+
+/* ------------------------------------------------------------------------- */
+
 QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 				       CefRefPtr<CefRequestContext> rqc_)
 	: QCefWidget(parent), url(url_), rqc(rqc_)
@@ -148,10 +230,13 @@ QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 	window = new QWindow();
 	window->setFlags(Qt::FramelessWindowHint);
 #endif
+	RegisterFocusTrackerWidget(this);
+
 }
 
 QCefWidgetInternal::~QCefWidgetInternal()
 {
+	UnregisterFocusTrackerWidget(this);
 	closeBrowser();
 }
 
