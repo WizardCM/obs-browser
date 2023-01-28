@@ -305,12 +305,43 @@ bool BrowserClient::OnTooltip(CefRefPtr<CefBrowser>, CefString &text)
 #endif
 }
 
+void BrowserClient::OnPopupShow(CefRefPtr<CefBrowser>, bool show)
+{
+	if (!show && !!bs->texture_overlay) {
+		obs_enter_graphics();
+		gs_texture_destroy(bs->texture_overlay);
+		bs->texture_overlay = nullptr;
+		obs_leave_graphics();
+		bs->overlay_x = 0;
+		bs->overlay_y = 0;
+	}
+}
+
+void BrowserClient::OnPopupSize(CefRefPtr<CefBrowser>, const CefRect &rect)
+{
+	if (rect.width > 0) {
+		bs->overlay_x = rect.x;
+		bs->overlay_y = rect.y;
+	}
+}
+
 void BrowserClient::OnPaint(CefRefPtr<CefBrowser>, PaintElementType type,
 			    const RectList &, const void *buffer, int width,
 			    int height)
 {
-	if (type != PET_VIEW) {
-		// TODO Overlay texture on top of bs->texture
+	if (type == PET_POPUP && !!bs->texture && valid()) {
+		obs_enter_graphics();
+		if (bs->texture_overlay) {
+			gs_texture_destroy(bs->texture_overlay);
+			bs->texture_overlay = nullptr;
+		}
+
+		bs->texture_overlay = gs_texture_create(
+			width, height, GS_BGRA, 1, (const uint8_t **)&buffer,
+			GS_DYNAMIC);
+		obs_leave_graphics();
+		return;
+	} else if (type != PET_VIEW) {
 		return;
 	}
 
@@ -385,8 +416,25 @@ void BrowserClient::OnAcceleratedPaint(CefRefPtr<CefBrowser>,
 				       PaintElementType type, const RectList &,
 				       void *shared_handle)
 {
-	if (type != PET_VIEW) {
-		// TODO Overlay texture on top of bs->texture
+	if (type == PET_POPUP && !!bs->texture && valid()) {
+		obs_enter_graphics();
+		if (bs->texture_overlay) {
+			gs_texture_destroy(bs->texture_overlay);
+			bs->texture_overlay = nullptr;
+		}
+#if defined(__APPLE__) && CHROME_VERSION_BUILD > 4183
+		bs->texture_overlay = gs_texture_create_from_iosurface(
+			(IOSurfaceRef)(uintptr_t)shared_handle);
+#elif defined(_WIN32) && CHROME_VERSION_BUILD > 4183
+		bs->texture_overlay = gs_texture_open_nt_shared(
+			(uint32_t)(uintptr_t)shared_handle);
+#else
+		bs->texture_overlay = gs_texture_open_shared(
+			(uint32_t)(uintptr_t)shared_handle);
+#endif
+		obs_leave_graphics();
+		return;
+	} else if (type != PET_VIEW) {
 		return;
 	}
 
@@ -433,8 +481,22 @@ void BrowserClient::OnAcceleratedPaint2(CefRefPtr<CefBrowser>,
 					PaintElementType type, const RectList &,
 					void *shared_handle, bool new_texture)
 {
-	if (type != PET_VIEW) {
-		// TODO Overlay texture on top of bs->texture
+	if (type == PET_POPUP && !!bs->texture && valid()) {
+		obs_enter_graphics();
+		if (bs->texture_overlay) {
+			gs_texture_destroy(bs->texture_overlay);
+			bs->texture_overlay = nullptr;
+		}
+#if defined(_WIN32) && CHROME_VERSION_BUILD > 4183
+		bs->texture_overlay = gs_texture_open_nt_shared(
+			(uint32_t)(uintptr_t)shared_handle);
+#else
+		bs->texture_overlay = gs_texture_open_shared(
+			(uint32_t)(uintptr_t)shared_handle);
+#endif
+		obs_leave_graphics();
+		return;
+	} else if (type != PET_VIEW) {
 		return;
 	}
 

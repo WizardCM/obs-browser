@@ -67,9 +67,12 @@ struct BrowserSource {
 	std::string url;
 	std::string css;
 	gs_texture_t *texture = nullptr;
+	gs_texture_t *texture_overlay = nullptr;
 	gs_texture_t *extra_texture = nullptr;
 	uint32_t last_cx = 0;
 	uint32_t last_cy = 0;
+	int overlay_x = 0;
+	int overlay_y = 0;
 	gs_color_format last_format = GS_UNKNOWN;
 
 #ifdef ENABLE_BROWSER_SHARED_TEXTURE
@@ -131,6 +134,7 @@ struct BrowserSource {
 	void Update(obs_data_t *settings = nullptr);
 	void Tick();
 	void Render();
+	void DrawOverlay(bool flip);
 #if CHROME_VERSION_BUILD < 4103
 	void ClearAudioStreams();
 	void EnumAudioStreams(obs_source_enum_proc_t cb, void *param);

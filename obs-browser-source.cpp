@@ -688,6 +688,10 @@ void BrowserSource::Render()
 
 		gs_blend_state_pop();
 
+		// TODO This is washed out on Windows when hardware accelerated
+		while (gs_effect_loop(effect, "Draw"))
+			DrawOverlay(flip);
+
 		gs_enable_framebuffer_srgb(previous);
 	}
 
@@ -697,6 +701,23 @@ void BrowserSource::Render()
 #elif defined(ENABLE_BROWSER_QT_LOOP)
 	ProcessCef();
 #endif
+}
+
+void BrowserSource::DrawOverlay(bool flip)
+{
+	if (!!texture && !!texture_overlay) {
+		gs_blend_state_push();
+		gs_blend_function_separate(GS_BLEND_SRCALPHA,
+					   GS_BLEND_INVSRCALPHA /*dest_color*/,
+					   GS_BLEND_ONE /*src_alpha*/,
+					   GS_BLEND_INVSRCALPHA /*dest_alpha*/);
+		gs_matrix_push();
+		obs_source_draw(texture_overlay, overlay_x, overlay_y, 0, 0,
+				flip);
+		gs_matrix_pop();
+
+		gs_blend_state_pop();
+	}
 }
 
 static void ExecuteOnBrowser(BrowserFunc func, BrowserSource *bs)

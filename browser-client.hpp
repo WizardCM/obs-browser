@@ -131,6 +131,10 @@ public:
 	/* CefRenderHandler */
 	virtual void GetViewRect(CefRefPtr<CefBrowser> browser,
 				 CefRect &rect) override;
+	virtual void OnPopupShow(CefRefPtr<CefBrowser> browser,
+				 bool show) override;
+	virtual void OnPopupSize(CefRefPtr<CefBrowser> browser,
+				 const CefRect &rect) override;
 	virtual void OnPaint(CefRefPtr<CefBrowser> browser,
 			     PaintElementType type, const RectList &dirtyRects,
 			     const void *buffer, int width,
