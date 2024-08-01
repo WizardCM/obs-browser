@@ -368,6 +368,10 @@ void QCefWidgetInternal::resizeEvent(QResizeEvent *event)
 
 void QCefWidgetInternal::Resize()
 {
+	if (os_event_try(cef_started_event) != 0) {
+		return;
+	}
+
 	QSize size = this->size() * devicePixelRatioF();
 
 	bool success = QueueCEFTask([this, size]() {
@@ -552,8 +556,18 @@ QCefWidget *QCefInternal::create_widget(QWidget *parent, const std::string &url,
 
 QCefCookieManager *QCefInternal::create_cookie_manager(const std::string &storage_path, bool persist_session_cookies)
 {
+	std::string path = storage_path;
+#if CHROME_VERSION_BUILD > 6533
+	// TODO: Update obs-studio to use the new path structure due to subdirectories not being supported by CEF
+	// https://github.com/obsproject/obs-studio/issues/13498
+	std::string legacy = "obs_profile_cookies/";
+	size_t pos = storage_path.find(legacy);
+	if (pos != std::string::npos) {
+		path.replace(pos, legacy.length(), "obs_profile_cookies_");
+	}
+#endif
 	try {
-		return new QCefCookieManagerInternal(storage_path, persist_session_cookies);
+		return new QCefCookieManagerInternal(path, persist_session_cookies);
 	} catch (const char *error) {
 		blog(LOG_ERROR, "Failed to create cookie manager: %s", error);
 		return nullptr;
@@ -562,7 +576,16 @@ QCefCookieManager *QCefInternal::create_cookie_manager(const std::string &storag
 
 BPtr<char> QCefInternal::get_cookie_path(const std::string &storage_path)
 {
-	BPtr<char> rpath = obs_module_config_path(storage_path.c_str());
+	std::string path = storage_path;
+#if CHROME_VERSION_BUILD > 6533
+	// TODO: Update obs-studio to use the new path structure due to subdirectories not being supported by CEF
+	std::string legacy = "obs_profile_cookies/";
+	size_t pos = storage_path.find(legacy);
+	if (pos != std::string::npos) {
+		path.replace(pos, legacy.length(), "obs_profile_cookies_");
+	}
+#endif
+	BPtr<char> rpath = obs_module_config_path(path.c_str());
 	return os_get_abs_path_ptr(rpath.Get());
 }
 
