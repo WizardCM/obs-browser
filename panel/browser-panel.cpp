@@ -392,7 +392,7 @@ void QCefWidgetInternal::Resize()
 	QSize size = this->size() * devicePixelRatioF();
 
 	bool success = QueueCEFTask([this, size]() {
-		if (!cefBrowser)
+		if (!cefBrowser || !cefBrowser->IsValid())
 			return;
 
 		CefWindowHandle handle =
@@ -452,14 +452,14 @@ QPaintEngine *QCefWidgetInternal::paintEngine() const
 void QCefWidgetInternal::setURL(const std::string &url_)
 {
 	url = url_;
-	if (cefBrowser) {
+	if (cefBrowser && cefBrowser->IsValid()) {
 		cefBrowser->GetMainFrame()->LoadURL(url);
 	}
 }
 
 void QCefWidgetInternal::reloadPage()
 {
-	if (cefBrowser)
+	if (cefBrowser && cefBrowser->IsValid())
 		cefBrowser->ReloadIgnoreCache();
 }
 
@@ -470,7 +470,7 @@ void QCefWidgetInternal::setStartupScript(const std::string &script_)
 
 void QCefWidgetInternal::executeJavaScript(const std::string &script_)
 {
-	if (!cefBrowser)
+	if (!cefBrowser || !cefBrowser->IsValid())
 		return;
 
 	CefRefPtr<CefFrame> frame = cefBrowser->GetMainFrame();
