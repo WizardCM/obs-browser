@@ -163,10 +163,13 @@ QCefWidgetInternal::QCefWidgetInternal(QWidget *parent, const std::string &url_,
 QCefWidgetInternal::~QCefWidgetInternal()
 {
 	closeBrowser();
+	blog(LOG_WARNING, "QCefWidgetInternal::~QCefWidgetInternal ---- closed");
 }
 
 void QCefWidgetInternal::closeBrowser()
 {
+
+	blog(LOG_WARNING, "QCefWidgetInternal::~closeBrowser ---- starting");
 	CefRefPtr<CefBrowser> browser = cefBrowser;
 	if (!!browser) {
 		auto destroyBrowser = [](CefRefPtr<CefBrowser> cefBrowser) {
@@ -216,7 +219,11 @@ void QCefWidgetInternal::closeBrowser()
 		destroyBrowser(browser);
 		browser = nullptr;
 		cefBrowser = nullptr;
+
+	blog(LOG_WARNING, "QCefWidgetInternal::~closeBrowser ---- destroyed");
 	}
+
+	blog(LOG_WARNING, "QCefWidgetInternal::~closeBrowser ---- ended");
 }
 
 #ifdef __linux__
@@ -248,8 +255,12 @@ static bool XWindowHasAtom(Display *display, Window w, Atom a)
  */
 void QCefWidgetInternal::unsetToplevelXdndProxy()
 {
-	if (!cefBrowser)
+
+	blog(LOG_WARNING, "QCefWidgetInternal::unsetToplevelXdndProxy ------ start");
+	if (!cefBrowser || !cefBrowser->IsValid())
 		return;
+
+	blog(LOG_WARNING, "QCefWidgetInternal::unsetToplevelXdndProxy ------ run");
 
 	CefWindowHandle browserHandle =
 		cefBrowser->GetHost()->GetWindowHandle();

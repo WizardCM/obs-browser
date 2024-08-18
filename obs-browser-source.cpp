@@ -115,6 +115,7 @@ BrowserSource::BrowserSource(obs_data_t *, obs_source_t *source_)
 
 static void ActuallyCloseBrowser(CefRefPtr<CefBrowser> cefBrowser)
 {
+	blog(LOG_WARNING, "ActuallyCloseBrowser ------ run");
 	CefRefPtr<CefClient> client = cefBrowser->GetHost()->GetClient();
 	BrowserClient *bc = reinterpret_cast<BrowserClient *>(client.get());
 	if (bc) {

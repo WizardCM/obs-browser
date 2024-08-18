@@ -11,6 +11,7 @@ class QCefBrowserClient : public CefClient,
 			  public CefLifeSpanHandler,
 			  public CefContextMenuHandler,
 			  public CefLoadHandler,
+			  public CefFrameHandler,
 			  public CefKeyboardHandler,
 			  public CefFocusHandler,
 			  public CefJSDialogHandler {
@@ -24,6 +25,10 @@ public:
 		  allowAllPopups(allowAllPopups_)
 	{
 	}
+	inline ~QCefBrowserClient()
+	{
+		blog(LOG_WARNING, "~QCefBrowserClient() ---- destroyed");
+	}
 
 	/* CefClient */
 	virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override;
@@ -32,6 +37,7 @@ public:
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
 	virtual CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
 	virtual CefRefPtr<CefFocusHandler> GetFocusHandler() override;
+	virtual CefRefPtr<CefFrameHandler> GetFrameHandler() override;
 	virtual CefRefPtr<CefContextMenuHandler>
 	GetContextMenuHandler() override;
 	virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
@@ -70,9 +76,16 @@ public:
 		CefRefPtr<CefDictionaryValue> &extra_info,
 		bool *no_javascript_access) override;
 
+	virtual bool DoClose(CefRefPtr<CefBrowser>browser) override;
+	virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
+
 	/* CefFocusHandler */
 	virtual bool OnSetFocus(CefRefPtr<CefBrowser> browser,
 				CefFocusHandler::FocusSource source) override;
+
+	/* CefFrameHandler */
+	virtual void OnFrameDetached(CefRefPtr<CefBrowser> browser,
+				CefRefPtr<CefFrame> frame) override;
 
 	/* CefContextMenuHandler */
 	virtual void

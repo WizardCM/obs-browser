@@ -53,6 +53,11 @@ CefRefPtr<CefFocusHandler> QCefBrowserClient::GetFocusHandler()
 	return this;
 }
 
+CefRefPtr<CefFrameHandler> QCefBrowserClient::GetFrameHandler()
+{
+	return this;
+}
+
 CefRefPtr<CefContextMenuHandler> QCefBrowserClient::GetContextMenuHandler()
 {
 	return this;
@@ -223,6 +228,23 @@ bool QCefBrowserClient::OnBeforePopup(
 	QUrl url = QUrl(str_url.c_str(), QUrl::TolerantMode);
 	QDesktopServices::openUrl(url);
 	return true;
+}
+
+bool QCefBrowserClient::DoClose(CefRefPtr<CefBrowser>)
+{
+	blog(LOG_WARNING, "QCefBrowserClient::DoClose ------ run");
+	return false;
+}
+
+void QCefBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser>)
+{
+	blog(LOG_WARNING, "QCefBrowserClient::OnBeforeClose ------ run");
+}
+
+void QCefBrowserClient::OnFrameDetached(CefRefPtr<CefBrowser>,
+				   CefRefPtr<CefFrame>)
+{
+	blog(LOG_WARNING, "QCefBrowserClient::OnFrameDetached ------ run");
 }
 
 bool QCefBrowserClient::OnSetFocus(CefRefPtr<CefBrowser>,
