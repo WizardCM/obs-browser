@@ -71,8 +71,7 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 	CefRefPtr<CefCookieManager> cm;
 	CefRefPtr<CefRequestContext> rc;
 
-	QCefCookieManagerInternal(const std::string &storage_path,
-				  bool persist_session_cookies)
+	QCefCookieManagerInternal(const std::string &storage_path, bool)
 	{
 		if (os_event_try(cef_started_event) != 0)
 			throw "Browser thread not initialized";
@@ -92,8 +91,6 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 			settings, CefRefPtr<CefRequestContextHandler>());
 		if (rc)
 			cm = rc->GetCookieManager(nullptr);
-
-		UNUSED_PARAMETER(persist_session_cookies);
 	}
 
 	virtual bool DeleteCookies(const std::string &url,
@@ -103,7 +100,7 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 	}
 
 	virtual bool SetStoragePath(const std::string &storage_path,
-				    bool persist_session_cookies) override
+				    bool) override
 	{
 		BPtr<char> rpath = obs_module_config_path(storage_path.c_str());
 		BPtr<char> path = os_get_abs_path_ptr(rpath.Get());
@@ -118,7 +115,6 @@ struct QCefCookieManagerInternal : QCefCookieManager {
 		if (rc)
 			cm = rc->GetCookieManager(nullptr);
 
-		UNUSED_PARAMETER(persist_session_cookies);
 		return true;
 	}
 

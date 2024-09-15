@@ -174,12 +174,10 @@ void BrowserApp::ExecuteJSFunction(CefRefPtr<CefBrowser> browser,
 }
 
 #if !ENABLE_WASHIDDEN
-void BrowserApp::SetFrameDocumentVisibility(CefRefPtr<CefBrowser> browser,
+void BrowserApp::SetFrameDocumentVisibility(CefRefPtr<CefBrowser>,
 					    CefRefPtr<CefFrame> frame,
 					    bool isVisible)
 {
-	UNUSED_PARAMETER(browser);
-
 	CefRefPtr<CefV8Context> context = frame->GetV8Context();
 
 	context->Enter();
@@ -310,11 +308,10 @@ CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value)
 }
 
 bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
-					  CefRefPtr<CefFrame> frame,
+					  CefRefPtr<CefFrame>,
 					  CefProcessId source_process,
 					  CefRefPtr<CefProcessMessage> message)
 {
-	UNUSED_PARAMETER(frame);
 	DCHECK(source_process == PID_BROWSER);
 
 	CefRefPtr<CefListValue> args = message->GetArgumentList();

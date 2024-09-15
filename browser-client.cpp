@@ -510,22 +510,20 @@ static speaker_layout GetSpeakerLayout(CefAudioHandler::ChannelLayout cefLayout)
 }
 
 #if CHROME_VERSION_BUILD >= 4103
-void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser,
+void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser>,
 					 const CefAudioParameters &params_,
 					 int channels_)
 {
-	UNUSED_PARAMETER(browser);
 	channels = channels_;
 	channel_layout = (ChannelLayout)params_.channel_layout;
 	sample_rate = params_.sample_rate;
 	frames_per_buffer = params_.frames_per_buffer;
 }
 
-void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
+void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser>,
 					const float **data, int frames,
 					int64_t pts)
 {
-	UNUSED_PARAMETER(browser);
 	if (!valid()) {
 		return;
 	}
@@ -543,16 +541,10 @@ void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser,
 	obs_source_output_audio(bs->source, &audio);
 }
 
-void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser)
-{
-	UNUSED_PARAMETER(browser);
-}
+void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser>) {}
 
-void BrowserClient::OnAudioStreamError(CefRefPtr<CefBrowser> browser,
-				       const CefString &message)
+void BrowserClient::OnAudioStreamError(CefRefPtr<CefBrowser>, const CefString &)
 {
-	UNUSED_PARAMETER(browser);
-	UNUSED_PARAMETER(message);
 }
 
 static CefAudioHandler::ChannelLayout Convert2CEFSpeakerLayout(int channels)
@@ -577,10 +569,9 @@ static CefAudioHandler::ChannelLayout Convert2CEFSpeakerLayout(int channels)
 	}
 }
 
-bool BrowserClient::GetAudioParameters(CefRefPtr<CefBrowser> browser,
+bool BrowserClient::GetAudioParameters(CefRefPtr<CefBrowser>,
 				       CefAudioParameters &params)
 {
-	UNUSED_PARAMETER(browser);
 	int channels = (int)audio_output_get_channels(obs_get_audio());
 	params.channel_layout = Convert2CEFSpeakerLayout(channels);
 	params.sample_rate = (int)audio_output_get_sample_rate(obs_get_audio());
@@ -588,11 +579,10 @@ bool BrowserClient::GetAudioParameters(CefRefPtr<CefBrowser> browser,
 	return true;
 }
 #elif CHROME_VERSION_BUILD < 4103
-void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int id,
-					 int, ChannelLayout channel_layout,
+void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser>, int id, int,
+					 ChannelLayout channel_layout,
 					 int sample_rate, int)
 {
-	UNUSED_PARAMETER(browser);
 	if (!valid()) {
 		return;
 	}
@@ -613,11 +603,10 @@ void BrowserClient::OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int id,
 	stream.sample_rate = sample_rate;
 }
 
-void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int id,
+void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser>, int id,
 					const float **data, int frames,
 					int64_t pts)
 {
-	UNUSED_PARAMETER(browser);
 	if (!valid()) {
 		return;
 	}
@@ -638,9 +627,8 @@ void BrowserClient::OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int id,
 	obs_source_output_audio(stream.source, &audio);
 }
 
-void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int id)
+void BrowserClient::OnAudioStreamStopped(CefRefPtr<CefBrowser>, int id)
 {
-	UNUSED_PARAMETER(browser);
 	if (!valid()) {
 		return;
 	}

@@ -138,13 +138,12 @@ bool QCefBrowserClient::OnOpenURLFromTab(
 	return true;
 }
 
-void QCefBrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
+void QCefBrowserClient::OnLoadError(CefRefPtr<CefBrowser>,
 				    CefRefPtr<CefFrame> frame,
 				    CefLoadHandler::ErrorCode errorCode,
 				    const CefString &errorText,
 				    const CefString &failedUrl)
 {
-	UNUSED_PARAMETER(browser);
 	if (errorCode == ERR_ABORTED)
 		return;
 
