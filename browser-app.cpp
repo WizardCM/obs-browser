@@ -63,6 +63,13 @@ void BrowserApp::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_li
 #endif
 }
 
+bool BrowserApp::OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine>, const CefString &)
+{
+	blog(LOG_ERROR,
+	     "[obs-browser] Another instance of OBS is using this config directory. Browsers will not load.");
+	return false;
+}
+
 void BrowserApp::OnBeforeCommandLineProcessing(const CefString &, CefRefPtr<CefCommandLine> command_line)
 {
 	if (!shared_texture_available) {

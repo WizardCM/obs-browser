@@ -87,6 +87,8 @@ public:
 	virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
 	virtual void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
 	virtual void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
+	virtual bool OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine> command_line,
+						 const CefString &current_directory) override;
 	virtual void OnBeforeCommandLineProcessing(const CefString &process_type,
 						   CefRefPtr<CefCommandLine> command_line) override;
 	virtual void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
