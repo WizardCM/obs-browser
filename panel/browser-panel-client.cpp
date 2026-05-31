@@ -43,6 +43,11 @@ CefRefPtr<CefCommandHandler> QCefBrowserClient::GetCommandHandler()
 {
 	return this;
 }
+
+CefRefPtr<CefPermissionHandler> QCefBrowserClient::GetPermissionHandler()
+{
+	return this;
+}
 #endif
 
 CefRefPtr<CefRequestHandler> QCefBrowserClient::GetRequestHandler()
@@ -75,11 +80,80 @@ CefRefPtr<CefJSDialogHandler> QCefBrowserClient::GetJSDialogHandler()
 	return this;
 }
 
-/* CefCommandHandler */
 #if CHROME_VERSION_BUILD >= 6533
+/* CefCommandHandler */
 bool QCefBrowserClient::OnChromeCommand(CefRefPtr<CefBrowser>, int, cef_window_open_disposition_t)
 {
 	return true;
+}
+
+/* CefPermissionHandler */
+bool QCefBrowserClient::OnRequestMediaAccessPermission(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefString &,
+						       uint32_t requested_permissions,
+						       CefRefPtr<CefMediaAccessCallback> callback)
+{
+	//blog(LOG_WARNING, "[obs-browser]: A dock was given access to media");
+	auto msgbox = [requested_permissions, callback]() {
+		QMessageBox *dlg = new QMessageBox(nullptr);
+		dlg->setStandardButtons(QMessageBox::Ok);
+		dlg->setWindowFlag(Qt::WindowStaysOnTopHint, true);
+		dlg->setTextFormat(Qt::PlainText);
+		dlg->setText("This dock is attempting to ask for permission for media (mic, playback, or both).");
+		std::stringstream title;
+		title << obs_module_text("Dialog.Confirm");
+		dlg->setIcon(QMessageBox::Question);
+		dlg->addButton(QMessageBox::Cancel);
+		title << ": " << obs_module_text("Dialog.BrowserDock");
+		dlg->setWindowTitle(title.str().c_str());
+
+		auto finished = [callback, requested_permissions](int result) {
+			callback->Continue(result == QMessageBox::Ok ? requested_permissions
+								     : 0);
+		};
+
+		QWidget::connect(dlg, &QMessageBox::finished, finished);
+
+		dlg->open();
+	};
+	QMetaObject::invokeMethod(QCoreApplication::instance()->thread(), msgbox);
+	return true;
+}
+
+bool QCefBrowserClient::OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t, const CefString &,
+					       uint32_t requested_permissions,
+					       CefRefPtr<CefPermissionPromptCallback> callback)
+{
+	blog(LOG_WARNING, "[obs-browser]: A dock requested access to a permission: %s",
+	     browser->GetMainFrame()->GetURL().ToString().c_str());
+	auto msgbox = [requested_permissions, callback]() {
+		QMessageBox *dlg = new QMessageBox(nullptr);
+		dlg->setStandardButtons(QMessageBox::Ok);
+		dlg->setWindowFlag(Qt::WindowStaysOnTopHint, true);
+		dlg->setTextFormat(Qt::PlainText);
+		dlg->setText("This dock is attempting to ask for permission for.. something.");
+		std::stringstream title;
+		title << obs_module_text("Dialog.Confirm");
+		dlg->setIcon(QMessageBox::Question);
+		dlg->addButton(QMessageBox::Cancel);
+		title << ": " << obs_module_text("Dialog.BrowserDock");
+		dlg->setWindowTitle(title.str().c_str());
+
+		auto finished = [callback, requested_permissions](int result) {
+			callback->Continue(result == QMessageBox::Ok ? CEF_PERMISSION_RESULT_ACCEPT
+								     : CEF_PERMISSION_RESULT_DENY);
+		};
+
+		QWidget::connect(dlg, &QMessageBox::finished, finished);
+
+		dlg->open();
+	};
+	QMetaObject::invokeMethod(QCoreApplication::instance()->thread(), msgbox);
+	return true;
+}
+
+void QCefBrowserClient::OnDismissPermissionPrompt(CefRefPtr<CefBrowser>, uint64_t, cef_permission_request_result_t)
+{
+	blog(LOG_WARNING, "[obs-browser]: A dock requested permission and was dismissed");
 }
 #endif
 
