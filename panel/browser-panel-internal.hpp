@@ -29,6 +29,7 @@ public:
 	~QCefWidgetInternal();
 
 	CefRefPtr<CefBrowser> cefBrowser;
+	CefRefPtr<CefWindow> cefWindow;
 	std::string url;
 	std::string script;
 	CefRefPtr<CefRequestContext> rqc;

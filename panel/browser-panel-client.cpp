@@ -387,6 +387,7 @@ bool QCefBrowserClient::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
 		windowInfo.bounds.y = pos.y() + 30;
 		windowInfo.bounds.width = 900;
 		windowInfo.bounds.height = 700;
+		// Breaks with Views
 		host->ShowDevTools(windowInfo, host->GetClient(), CefBrowserSettings(),
 				   {params.get()->GetXCoord(), params.get()->GetYCoord()});
 		return true;
