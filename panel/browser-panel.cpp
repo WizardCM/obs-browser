@@ -36,6 +36,110 @@ std::vector<PopupWhitelistInfo> forced_popups;
 static int zoomLvls[] = {25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300, 400};
 
 namespace {
+
+// When using the Views framework this object provides the delegate
+// implementation for the CefWindow that hosts the Views-based browser.
+// https://cef-builds.spotifycdn.com/docs/150.0/classCefWindowDelegate.html#a345ca4d737edc1bfa8eb7b506e7bfe46
+// TODO CefWindowDelegate and CefBrowserViewDelegate can be built directly into CefClient, see below
+// https://github.com/UnlikeOtherAI/kelpie/blob/a884c5c6523fcfb95a5d74ea11aec3c054aec23f/core/native/engine-chromium-desktop/src/account_login_window.cpp#L58
+class SimpleWindowDelegate : public CefWindowDelegate {
+public:
+	SimpleWindowDelegate(CefRefPtr<CefBrowserView> browser_view, 
+			     cef_show_state_t initial_show_state, cef_window_handle_t parent_handle)
+		: browser_view_(browser_view),
+		  initial_show_state_(initial_show_state),
+		  parent_handle_(parent_handle)
+
+	{
+	}
+
+	SimpleWindowDelegate(const SimpleWindowDelegate &) = delete;
+	SimpleWindowDelegate &operator=(const SimpleWindowDelegate &) = delete;
+
+	void OnWindowCreated(CefRefPtr<CefWindow> window) override
+	{
+		// Add the browser view and show the window.
+		window->AddChildView(browser_view_);
+		window->SetPosition(CefPoint(0, 0));
+
+		if (initial_show_state_ != CEF_SHOW_STATE_HIDDEN) {
+			window->Show();
+			HWND hwnd = (HWND)window->GetWindowHandle();
+			if (hwnd && parent_handle_) {
+				SetParent(hwnd, (HWND)parent_handle_);
+			}
+		}
+	}
+
+	bool IsFrameless(CefRefPtr<CefWindow>) override { return true; }
+
+	void OnWindowDestroyed(CefRefPtr<CefWindow>) override { browser_view_ = nullptr; }
+
+	// Doesn't do anything
+	// bool IsWindowModalDialog(CefRefPtr<CefWindow> window) override { return true; }
+
+	bool CanResize(CefRefPtr<CefWindow>) override { return false; }
+
+	bool CanClose(CefRefPtr<CefWindow>) override
+	{
+		// Allow the window to close if the browser says it's OK.
+		CefRefPtr<CefBrowser> browser = browser_view_->GetBrowser();
+		if (browser) {
+			return browser->GetHost()->TryCloseBrowser();
+		}
+		return true;
+	}
+
+	CefSize GetPreferredSize(CefRefPtr<CefView>) override {
+		if (parent_handle_) {
+			QWindow *w = QWindow::fromWinId((WId)parent_handle_);
+			return CefSize(w->width(), w->height());
+		}
+		return CefSize(0, 0);
+	}
+
+	cef_show_state_t GetInitialShowState(CefRefPtr<CefWindow> window) override { return initial_show_state_; }
+
+	cef_runtime_style_t GetWindowRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
+
+private:
+	CefRefPtr<CefBrowserView> browser_view_;
+	const cef_show_state_t initial_show_state_;
+	const cef_window_handle_t parent_handle_;
+
+	IMPLEMENT_REFCOUNTING(SimpleWindowDelegate);
+};
+
+class SimpleBrowserViewDelegate : public CefBrowserViewDelegate {
+public:
+	explicit SimpleBrowserViewDelegate() {}
+
+	SimpleBrowserViewDelegate(const SimpleBrowserViewDelegate &) = delete;
+	SimpleBrowserViewDelegate &operator=(const SimpleBrowserViewDelegate &) = delete;
+
+	bool OnPopupBrowserViewCreated(CefRefPtr<CefBrowserView> browser_view,
+				       CefRefPtr<CefBrowserView> popup_browser_view, bool is_devtools) override
+	{
+		// Create a new top-level Window for the popup. It will show itself after
+		// creation.
+		CefWindow::CreateTopLevelWindow(
+			new SimpleWindowDelegate(popup_browser_view, CEF_SHOW_STATE_NORMAL, nullptr));
+
+		// We created the Window.
+		return true;
+	}
+
+	cef_runtime_style_t GetBrowserRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
+
+	// ChromeToolbarType GetChromeToolbarType() { return CEF_CTT_NORMAL; }
+
+private:
+
+	IMPLEMENT_REFCOUNTING(SimpleBrowserViewDelegate);
+};
+} // namespace
+
+namespace {
 void detachBrowserWindow(CefRefPtr<CefBrowserHost> host)
 {
 #ifdef _WIN32
@@ -328,6 +432,19 @@ void QCefWidgetInternal::Init()
 		[this, handle]()
 #endif
 		{
+			bool useViews = true;
+			if (useViews) {
+				CefBrowserSettings cefBrowserSettings;
+				CefRefPtr<QCefBrowserClient> browserClient =
+					new QCefBrowserClient(this, script, allowAllPopups_);
+				CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
+					browserClient, url, cefBrowserSettings, nullptr, nullptr,
+					new SimpleBrowserViewDelegate());
+
+				CefWindow::CreateTopLevelWindow(new SimpleWindowDelegate(
+					browser_view, CEF_SHOW_STATE_NORMAL, (CefWindowHandle)handle));
+				return;
+			}
 			CefWindowInfo windowInfo;
 
 			/* Make sure Init isn't called more than once. */
