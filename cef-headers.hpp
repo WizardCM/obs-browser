@@ -37,6 +37,10 @@
 #if CHROME_VERSION_BUILD >= 6943
 #include <include/cef_version_info.h>
 #endif
+#if CHROME_VERSION_BUILD > 6613
+#include <include/views/cef_browser_view.h>
+#include <include/views/cef_window.h>
+#endif
 #include <include/cef_render_process_handler.h>
 #include <include/cef_request_context_handler.h>
 #include <include/cef_jsdialog_handler.h>

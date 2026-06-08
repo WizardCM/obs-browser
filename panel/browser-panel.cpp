@@ -36,6 +36,97 @@ std::vector<PopupWhitelistInfo> forced_popups;
 static int zoomLvls[] = {25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300, 400};
 
 namespace {
+
+// When using the Views framework this object provides the delegate
+// implementation for the CefWindow that hosts the Views-based browser.
+class SimpleWindowDelegate : public CefWindowDelegate {
+public:
+	SimpleWindowDelegate(CefRefPtr<CefBrowserView> browser_view, cef_runtime_style_t runtime_style,
+			     cef_show_state_t initial_show_state, WId handle)
+		: browser_view_(browser_view),
+		  runtime_style_(runtime_style),
+		  initial_show_state_(initial_show_state),
+		  handle_(handle)
+	{
+	}
+
+	SimpleWindowDelegate(const SimpleWindowDelegate &) = delete;
+	SimpleWindowDelegate &operator=(const SimpleWindowDelegate &) = delete;
+
+	void OnWindowCreated(CefRefPtr<CefWindow> window) override
+	{
+		// Add the browser view and show the window.
+		window->AddChildView(browser_view_);
+
+		if (initial_show_state_ != CEF_SHOW_STATE_HIDDEN) {
+			window->Show();
+			HWND hwnd = (HWND)window->GetWindowHandle();
+			if (hwnd && handle_) {
+				SetParent(hwnd, (HWND)handle_);
+			}
+		}
+	}
+
+	bool IsFrameless(CefRefPtr<CefWindow> window) override { return handle_; }
+
+	void OnWindowDestroyed(CefRefPtr<CefWindow> window) override { browser_view_ = nullptr; }
+
+	bool CanClose(CefRefPtr<CefWindow> window) override
+	{
+		// Allow the window to close if the browser says it's OK.
+		CefRefPtr<CefBrowser> browser = browser_view_->GetBrowser();
+		if (browser) {
+			return browser->GetHost()->TryCloseBrowser();
+		}
+		return true;
+	}
+
+	// CefSize GetPreferredSize(CefRefPtr<CefView> view) override { return CefSize(800, 600); }
+
+	cef_show_state_t GetInitialShowState(CefRefPtr<CefWindow> window) override { return initial_show_state_; }
+
+	cef_runtime_style_t GetWindowRuntimeStyle() override { return runtime_style_; }
+
+private:
+	CefRefPtr<CefBrowserView> browser_view_;
+	const cef_runtime_style_t runtime_style_;
+	const cef_show_state_t initial_show_state_;
+	const WId handle_;
+
+	IMPLEMENT_REFCOUNTING(SimpleWindowDelegate);
+};
+
+class SimpleBrowserViewDelegate : public CefBrowserViewDelegate {
+public:
+	explicit SimpleBrowserViewDelegate(cef_runtime_style_t runtime_style) : runtime_style_(runtime_style) {}
+
+	SimpleBrowserViewDelegate(const SimpleBrowserViewDelegate &) = delete;
+	SimpleBrowserViewDelegate &operator=(const SimpleBrowserViewDelegate &) = delete;
+
+	bool OnPopupBrowserViewCreated(CefRefPtr<CefBrowserView> browser_view,
+				       CefRefPtr<CefBrowserView> popup_browser_view, bool is_devtools) override
+	{
+		// Create a new top-level Window for the popup. It will show itself after
+		// creation.
+		CefWindow::CreateTopLevelWindow(
+			new SimpleWindowDelegate(popup_browser_view, runtime_style_, CEF_SHOW_STATE_NORMAL, NULL));
+
+		// We created the Window.
+		return true;
+	}
+
+	cef_runtime_style_t GetBrowserRuntimeStyle() override { return runtime_style_; }
+
+	// ChromeToolbarType GetChromeToolbarType() { return CEF_CTT_NORMAL; }
+
+private:
+	const cef_runtime_style_t runtime_style_;
+
+	IMPLEMENT_REFCOUNTING(SimpleBrowserViewDelegate);
+};
+} // namespace
+
+namespace {
 void detachBrowserWindow(CefRefPtr<CefBrowserHost> host)
 {
 #ifdef _WIN32
@@ -317,6 +408,21 @@ void QCefWidgetInternal::Init()
 		[this, handle]()
 #endif
 		{
+			bool useViews = false;
+			//CefRefPtr<SimpleHandler> handler(new SimpleHandler(use_alloy_style));
+			if (useViews) {
+				cef_runtime_style_t runtime_style = CEF_RUNTIME_STYLE_ALLOY;
+				CefRefPtr<QCefBrowserClient> browserClient =
+					new QCefBrowserClient(this, script, allowAllPopups_);
+				CefBrowserSettings cefBrowserSettings;
+				CefRefPtr<CefBrowserView> browser_view = CefBrowserView::CreateBrowserView(
+					browserClient, url, cefBrowserSettings, nullptr, nullptr,
+					new SimpleBrowserViewDelegate(runtime_style));
+
+				CefRefPtr<CefWindow> window = CefWindow::CreateTopLevelWindow(new SimpleWindowDelegate(
+					browser_view, runtime_style, CEF_SHOW_STATE_NORMAL, handle));
+				return;
+			}
 			CefWindowInfo windowInfo;
 
 			/* Make sure Init isn't called more than once. */
