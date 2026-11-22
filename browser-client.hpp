@@ -66,78 +66,75 @@ public:
 	}
 
 	/* CefClient */
-	virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override;
-	virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override;
-	virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+	CefRefPtr<CefLoadHandler> GetLoadHandler() override;
+	CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+	CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
 #if CHROME_VERSION_BUILD >= 6533
-	virtual CefRefPtr<CefPermissionHandler> GetPermissionHandler() override;
+	CefRefPtr<CefPermissionHandler> GetPermissionHandler() override;
 #endif
-	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
-	virtual CefRefPtr<CefRequestHandler> GetRequestHandler() override;
-	virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
-	virtual CefRefPtr<CefAudioHandler> GetAudioHandler() override;
+	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
+	CefRefPtr<CefRequestHandler> GetRequestHandler() override;
+	CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
+	CefRefPtr<CefAudioHandler> GetAudioHandler() override;
 
-	virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-					      CefProcessId source_process,
-					      CefRefPtr<CefProcessMessage> message) override;
+	bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+				      CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
 
 	/* CefDisplayHandler */
-	virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message,
-				      const CefString &source, int line) override;
-	virtual bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString &text) override;
+	bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString &message,
+			      const CefString &source, int line) override;
+	bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString &text) override;
 
 	/* CefPermissionHandler */
 #if CHROME_VERSION_BUILD >= 6533
-	virtual bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t prompt_id,
-					    const CefString &requesting_origin, uint32_t requested_permissions,
-					    CefRefPtr<CefPermissionPromptCallback> callback) override;
+	bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser, uint64_t prompt_id,
+				    const CefString &requesting_origin, uint32_t requested_permissions,
+				    CefRefPtr<CefPermissionPromptCallback> callback) override;
 #endif
 
 	/* CefLifeSpanHandler */
-	virtual bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+	bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
 #if CHROME_VERSION_BUILD >= 6834
-				   int popup_id,
+			   int popup_id,
 #endif
-				   const CefString &target_url, const CefString &target_frame_name,
-				   cef_window_open_disposition_t target_disposition, bool user_gesture,
-				   const CefPopupFeatures &popupFeatures, CefWindowInfo &windowInfo,
-				   CefRefPtr<CefClient> &client, CefBrowserSettings &settings,
-				   CefRefPtr<CefDictionaryValue> &extra_info, bool *no_javascript_access) override;
+			   const CefString &target_url, const CefString &target_frame_name,
+			   cef_window_open_disposition_t target_disposition, bool user_gesture,
+			   const CefPopupFeatures &popupFeatures, CefWindowInfo &windowInfo,
+			   CefRefPtr<CefClient> &client, CefBrowserSettings &settings,
+			   CefRefPtr<CefDictionaryValue> &extra_info, bool *no_javascript_access) override;
 
 	/* CefRequestHandler */
-	virtual CefRefPtr<CefResourceRequestHandler>
+	CefRefPtr<CefResourceRequestHandler>
 	GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
 				  CefRefPtr<CefRequest> request, bool is_navigation, bool is_download,
 				  const CefString &request_initiator, bool &disable_default_handling) override;
-	virtual void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status
+	void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status
 #if CHROME_VERSION_BUILD >= 6367
-					       ,
-					       int error_code, const CefString &error_string
+				       ,
+				       int error_code, const CefString &error_string
 #endif
-					       ) override;
+				       ) override;
 
 	/* CefResourceRequestHandler */
-	virtual CefResourceRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
-									    CefRefPtr<CefFrame> frame,
-									    CefRefPtr<CefRequest> request,
-									    CefRefPtr<CefCallback> callback) override;
+	CefResourceRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+								    CefRefPtr<CefFrame> frame,
+								    CefRefPtr<CefRequest> request,
+								    CefRefPtr<CefCallback> callback) override;
 
 	/* CefContextMenuHandler */
-	virtual void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-					 CefRefPtr<CefContextMenuParams> params,
-					 CefRefPtr<CefMenuModel> model) override;
+	void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+				 CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model) override;
 
 	/* CefRenderHandler */
-	virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
-	virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects,
-			     const void *buffer, int width, int height) override;
+	void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override;
+	void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects,
+		     const void *buffer, int width, int height) override;
 #ifdef ENABLE_BROWSER_SHARED_TEXTURE
-	virtual void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
-					const RectList &dirtyRects,
+	void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList &dirtyRects,
 #if CHROME_VERSION_BUILD >= 6367
-					const CefAcceleratedPaintInfo &info) override;
+				const CefAcceleratedPaintInfo &info) override;
 #else
-					void *shared_handle) override;
+				void *shared_handle) override;
 #endif
 #ifdef CEF_ON_ACCELERATED_PAINT2
 	virtual void OnAcceleratedPaint2(CefRefPtr<CefBrowser> browser, PaintElementType type,
@@ -145,25 +142,23 @@ public:
 #endif
 #endif
 
-	virtual void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, const float **data, int frames,
-					 int64_t pts) override;
+	void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, const float **data, int frames, int64_t pts) override;
 
-	virtual void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser) override;
+	void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser) override;
 
-	virtual void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, const CefAudioParameters &params,
-					  int channels) override;
-	virtual void OnAudioStreamError(CefRefPtr<CefBrowser> browser, const CefString &message) override;
+	void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, const CefAudioParameters &params,
+				  int channels) override;
+	void OnAudioStreamError(CefRefPtr<CefBrowser> browser, const CefString &message) override;
 	const int kFramesPerBuffer = 1024;
-	virtual bool GetAudioParameters(CefRefPtr<CefBrowser> browser, CefAudioParameters &params) override;
+	bool GetAudioParameters(CefRefPtr<CefBrowser> browser, CefAudioParameters &params) override;
 
 	/* CefLoadHandler */
-	virtual void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-				 TransitionType transition_type) override;
-	virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
+	void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+			 TransitionType transition_type) override;
+	void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
 
-	virtual void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-				 CefLoadHandler::ErrorCode errorCode, const CefString &errorText,
-				 const CefString &failedUrl) override;
+	void OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefLoadHandler::ErrorCode errorCode,
+			 const CefString &errorText, const CefString &failedUrl) override;
 
 	IMPLEMENT_REFCOUNTING(BrowserClient);
 };

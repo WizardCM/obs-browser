@@ -84,27 +84,26 @@ public:
 	{
 	}
 
-	virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override;
-	virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
-	virtual CefRefPtr<CefClient> GetDefaultClient() override;
-	virtual void OnContextInitialized() override;
-	virtual void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
-	virtual void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
-	virtual void OnBeforeCommandLineProcessing(const CefString &process_type,
-						   CefRefPtr<CefCommandLine> command_line) override;
-	virtual void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-				      CefRefPtr<CefV8Context> context) override;
-	virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-					      CefProcessId source_process,
-					      CefRefPtr<CefProcessMessage> message) override;
-	virtual bool Execute(const CefString &name, CefRefPtr<CefV8Value> object, const CefV8ValueList &arguments,
-			     CefRefPtr<CefV8Value> &retval, CefString &exception) override;
+	CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override;
+	CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
+	CefRefPtr<CefClient> GetDefaultClient() override;
+	void OnContextInitialized() override;
+	void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;
+	void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
+	void OnBeforeCommandLineProcessing(const CefString &process_type,
+					   CefRefPtr<CefCommandLine> command_line) override;
+	void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+			      CefRefPtr<CefV8Context> context) override;
+	bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+				      CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
+	bool Execute(const CefString &name, CefRefPtr<CefV8Value> object, const CefV8ValueList &arguments,
+		     CefRefPtr<CefV8Value> &retval, CefString &exception) override;
 
 #ifdef ENABLE_BROWSER_QT_LOOP
 #if CHROME_VERSION_BUILD < 5938
-	virtual void OnScheduleMessagePumpWork(int64 delay_ms) override;
+	void OnScheduleMessagePumpWork(int64 delay_ms) override;
 #else
-	virtual void OnScheduleMessagePumpWork(int64_t delay_ms) override;
+	void OnScheduleMessagePumpWork(int64_t delay_ms) override;
 #endif
 	QTimer frameTimer;
 #endif
