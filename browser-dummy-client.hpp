@@ -24,9 +24,9 @@ class BrowserDummyClient : public CefClient,
 			   public CefRequestHandler,
 			   public CefLifeSpanHandler {
 public:
-	CefRefPtr<CefCommandHandler> GetCommandHandler() override;
-	CefRefPtr<CefRequestHandler> GetRequestHandler() override;
-	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
+	CefRefPtr<CefCommandHandler> GetCommandHandler() override { return this; };
+	CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; };
+	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; };
 
 	/* CefCommandHandler */
 	bool OnChromeCommand(CefRefPtr<CefBrowser> browser, int command_id,

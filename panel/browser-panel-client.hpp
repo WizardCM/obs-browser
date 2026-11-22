@@ -28,18 +28,18 @@ public:
 	}
 
 	/* CefClient */
-	CefRefPtr<CefLoadHandler> GetLoadHandler() override;
-	CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+	CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; };
+	CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; };
 #if CHROME_VERSION_BUILD >= 6533
-	CefRefPtr<CefCommandHandler> GetCommandHandler() override;
-	CefRefPtr<CefPermissionHandler> GetPermissionHandler() override;
+	CefRefPtr<CefCommandHandler> GetCommandHandler() override { return this; };
+	CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; };
 #endif
-	CefRefPtr<CefRequestHandler> GetRequestHandler() override;
-	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
-	CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override;
-	CefRefPtr<CefFocusHandler> GetFocusHandler() override;
-	CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
-	CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override;
+	CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; };
+	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; };
+	CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; };
+	CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; };
+	CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; };
+	CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override { return this; };
 
 	/* CefCommandHandler */
 #if CHROME_VERSION_BUILD >= 6533

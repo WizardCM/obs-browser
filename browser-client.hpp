@@ -66,16 +66,16 @@ public:
 	}
 
 	/* CefClient */
-	CefRefPtr<CefLoadHandler> GetLoadHandler() override;
-	CefRefPtr<CefRenderHandler> GetRenderHandler() override;
-	CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+	CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; };
+	CefRefPtr<CefRenderHandler> GetRenderHandler() override { return this; };
+	CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; };
 #if CHROME_VERSION_BUILD >= 6533
-	CefRefPtr<CefPermissionHandler> GetPermissionHandler() override;
+	CefRefPtr<CefPermissionHandler> GetPermissionHandler() override { return this; };
 #endif
-	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
-	CefRefPtr<CefRequestHandler> GetRequestHandler() override;
-	CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
-	CefRefPtr<CefAudioHandler> GetAudioHandler() override;
+	CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; };
+	CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; };
+	CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; };
+	CefRefPtr<CefAudioHandler> GetAudioHandler() override { return reroute_audio ? this : nullptr; };
 
 	bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
 				      CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;

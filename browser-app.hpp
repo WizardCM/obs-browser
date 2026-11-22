@@ -84,8 +84,8 @@ public:
 	{
 	}
 
-	CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override;
-	CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
+	CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; };
+	CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override { return this; };
 	CefRefPtr<CefClient> GetDefaultClient() override;
 	void OnContextInitialized() override;
 	void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) override;

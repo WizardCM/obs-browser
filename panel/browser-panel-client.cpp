@@ -27,59 +27,6 @@
 #define MENU_ITEM_ZOOM_OUT MENU_ID_CUSTOM_FIRST + 4
 #define MENU_ITEM_COPY_URL MENU_ID_CUSTOM_FIRST + 5
 
-/* CefClient */
-CefRefPtr<CefLoadHandler> QCefBrowserClient::GetLoadHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefDisplayHandler> QCefBrowserClient::GetDisplayHandler()
-{
-	return this;
-}
-
-#if CHROME_VERSION_BUILD >= 6533
-CefRefPtr<CefCommandHandler> QCefBrowserClient::GetCommandHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefPermissionHandler> QCefBrowserClient::GetPermissionHandler()
-{
-	return this;
-}
-#endif
-
-CefRefPtr<CefRequestHandler> QCefBrowserClient::GetRequestHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefLifeSpanHandler> QCefBrowserClient::GetLifeSpanHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefFocusHandler> QCefBrowserClient::GetFocusHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefContextMenuHandler> QCefBrowserClient::GetContextMenuHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefKeyboardHandler> QCefBrowserClient::GetKeyboardHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefJSDialogHandler> QCefBrowserClient::GetJSDialogHandler()
-{
-	return this;
-}
-
 /* CefCommandHandler */
 #if CHROME_VERSION_BUILD >= 6533
 bool QCefBrowserClient::OnChromeCommand(CefRefPtr<CefBrowser>, int, cef_window_open_disposition_t)

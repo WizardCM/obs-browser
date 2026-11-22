@@ -37,16 +37,6 @@ constexpr bool kIsPlatformWindows = true;
 constexpr bool kIsPlatformWindows = false;
 #endif
 
-CefRefPtr<CefRenderProcessHandler> BrowserApp::GetRenderProcessHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefBrowserProcessHandler> BrowserApp::GetBrowserProcessHandler()
-{
-	return this;
-}
-
 CefRefPtr<CefClient> BrowserApp::GetDefaultClient()
 {
 	return GetDummy();

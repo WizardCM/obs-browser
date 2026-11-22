@@ -41,48 +41,6 @@ inline bool BrowserClient::valid() const
 	return !!bs && !bs->destroying;
 }
 
-CefRefPtr<CefLoadHandler> BrowserClient::GetLoadHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefRenderHandler> BrowserClient::GetRenderHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefDisplayHandler> BrowserClient::GetDisplayHandler()
-{
-	return this;
-}
-
-#if CHROME_VERSION_BUILD >= 6533
-CefRefPtr<CefPermissionHandler> BrowserClient::GetPermissionHandler()
-{
-	return this;
-}
-#endif
-
-CefRefPtr<CefLifeSpanHandler> BrowserClient::GetLifeSpanHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefContextMenuHandler> BrowserClient::GetContextMenuHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefAudioHandler> BrowserClient::GetAudioHandler()
-{
-	return reroute_audio ? this : nullptr;
-}
-
-CefRefPtr<CefRequestHandler> BrowserClient::GetRequestHandler()
-{
-	return this;
-}
-
 CefRefPtr<CefResourceRequestHandler> BrowserClient::GetResourceRequestHandler(CefRefPtr<CefBrowser>,
 									      CefRefPtr<CefFrame>,
 									      CefRefPtr<CefRequest> request, bool, bool,

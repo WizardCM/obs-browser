@@ -17,21 +17,6 @@
 
 #include "browser-dummy-client.hpp"
 
-CefRefPtr<CefCommandHandler> BrowserDummyClient::GetCommandHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefRequestHandler> BrowserDummyClient::GetRequestHandler()
-{
-	return this;
-}
-
-CefRefPtr<CefLifeSpanHandler> BrowserDummyClient::GetLifeSpanHandler()
-{
-	return this;
-}
-
 bool BrowserDummyClient::OnChromeCommand(CefRefPtr<CefBrowser>, int, cef_window_open_disposition_t)
 {
 	return true;
